@@ -1,0 +1,134 @@
+{
+  "timestamp": "2025-11-14T18:56:59.506Z",
+  "baseUrl": "http://localhost:3000",
+  "isLoggedIn": false,
+  "summary": {
+    "totalLinks": 10,
+    "passedLinks": 10,
+    "failedLinks": 0,
+    "totalErrors": 0,
+    "passRate": "100.0%"
+  },
+  "results": [
+    {
+      "type": "tool-card",
+      "href": "src/pages/debt/Debt_Tracker.html",
+      "text": "Debt Tracker",
+      "accessible": true,
+      "loaded": true,
+      "clickHandlerWorked": true,
+      "errors": [],
+      "warnings": [],
+      "status": null,
+      "title": "Debt Tracker"
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/other/budget.html",
+      "text": "Budget Tracker",
+      "accessible": true,
+      "loaded": true,
+      "clickHandlerWorked": true,
+      "errors": [],
+      "warnings": [],
+      "status": null,
+      "title": "Bradley's Financial Tools"
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/calculators/Velocity_Calculator.html",
+      "text": "Velocity Calculator",
+      "accessible": true,
+      "loaded": true,
+      "clickHandlerWorked": true,
+      "errors": [],
+      "warnings": [],
+      "status": null,
+      "title": "Debt Crusher – Velocity Banking Tool"
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/other/net_worth_tracker.html",
+      "text": "Net Worth Tracker",
+      "accessible": true,
+      "loaded": true,
+      "clickHandlerWorked": true,
+      "errors": [],
+      "warnings": [],
+      "status": null,
+      "title": "Net Worth Intelligence"
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/calculators/Credit_Score_Estimator.html",
+      "text": "Credit Score Estimator",
+      "accessible": true,
+      "loaded": true,
+      "clickHandlerWorked": true,
+      "errors": [],
+      "warnings": [],
+      "status": null,
+      "title": "Credit Score Estimator"
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/calculators/1099_calculator.html",
+      "text": "1099 Tax Estimator",
+      "accessible": true,
+      "loaded": true,
+      "clickHandlerWorked": true,
+      "errors": [],
+      "warnings": [],
+      "status": null,
+      "title": "1099 Contractor IRS-Compliant Tax Calculator"
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/savings/savings_goal_tracker.html",
+      "text": "Savings Goal Tracker",
+      "accessible": true,
+      "loaded": true,
+      "clickHandlerWorked": true,
+      "errors": [],
+      "warnings": [],
+      "status": null,
+      "title": "Savings Goal Tracker – Pro"
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/other/notifications.html",
+      "text": "Notifications",
+      "accessible": true,
+      "loaded": true,
+      "clickHandlerWorked": true,
+      "errors": [],
+      "warnings": [],
+      "status": null,
+      "title": "🔔 Notifications | Bradley's Financial Tools"
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/other/activity_feed.html",
+      "text": "Activity Feed",
+      "accessible": true,
+      "loaded": true,
+      "clickHandlerWorked": true,
+      "errors": [],
+      "warnings": [],
+      "status": null,
+      "title": "📜 Master Activity Feed | Bradley's Financial Tools"
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/savings/challenge_library.html",
+      "text": "Challenge Library",
+      "accessible": true,
+      "loaded": true,
+      "clickHandlerWorked": true,
+      "errors": [],
+      "warnings": [],
+      "status": null,
+      "title": "Savings Challenge Library"
+    }
+  ]
+}

@@ -1,12 +1,11 @@
-# Bradley's Finance Hub
+# Bradley's Finance Hub - Web App
 
 <div align="center">
-  <h3>Comprehensive iOS Financial Management App</h3>
+  <h3>Progressive Web App for Financial Management</h3>
   <p>Track debts, manage budgets, achieve savings goals, and optimize your finances with velocity banking principles</p>
   
-  [![iOS](https://img.shields.io/badge/iOS-17.0+-blue.svg)](https://developer.apple.com/ios/)
-  [![Swift](https://img.shields.io/badge/Swift-5.0-orange.svg)](https://swift.org/)
-  [![SwiftUI](https://img.shields.io/badge/SwiftUI-Yes-green.svg)](https://developer.apple.com/xcode/swiftui/)
+  [![Firebase](https://img.shields.io/badge/Firebase-Hosting-orange.svg)](https://firebase.google.com/)
+  [![PWA](https://img.shields.io/badge/PWA-Enabled-green.svg)](https://web.dev/progressive-web-apps/)
   [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 </div>
 
@@ -14,9 +13,9 @@
 
 ## 📱 About
 
-Bradley's Finance Hub is a comprehensive iOS application designed to help you take complete control of your finances. Built with SwiftUI and Core Data, the app provides powerful tools for debt management, budgeting, savings tracking, and financial planning using velocity banking and zero-based budgeting principles.
+Bradley's Finance Hub is a Progressive Web App (PWA) designed to help you take complete control of your finances. Built with vanilla JavaScript and Firebase, the app provides powerful tools for debt management, budgeting, savings tracking, and financial planning using velocity banking and zero-based budgeting principles.
 
-**Privacy-First**: All your financial data is stored locally on your device. No third-party analytics, no tracking, no data sharing.
+**Privacy-First**: Your financial data is stored securely in Firebase with authentication and encryption.
 
 ## ✨ Features
 
@@ -60,64 +59,71 @@ Bradley's Finance Hub is a comprehensive iOS application designed to help you ta
 - Cash flow analysis
 - Debt payoff acceleration tools
 
-### 📅 Additional Features
-- Financial calendar view
-- Activity feed and notifications
-- Challenge library for savings
-- Data export (JSON, CSV, PDF)
-- Biometric authentication
-- Dark mode support
-- iCloud sync (optional)
-
 ## 🛠️ Technical Details
 
-- **Platform**: iOS 17.0+
-- **Language**: Swift 5.0
-- **Framework**: SwiftUI
-- **Data Storage**: Core Data (local) with optional CloudKit sync
-- **Architecture**: MVVM with SwiftUI
-- **Authentication**: Apple Sign In, Biometric (Face ID/Touch ID)
+- **Platform**: Web (Progressive Web App)
+- **Hosting**: Firebase Hosting
+- **Backend**: Firebase (Authentication, Firestore)
+- **Frontend**: Vanilla JavaScript, HTML, CSS
+- **Service Worker**: Offline support and caching
 
 ## 📋 Requirements
 
-- iOS 17.0 or later
-- Xcode 15.0 or later (for building from source)
-- Apple Developer account (for App Store distribution)
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+- Firebase account (for hosting and backend services)
 
-## 🚀 Building from Source
+## 🚀 Development
 
-1. Clone the repository:
+1. Install dependencies:
    ```bash
-   git clone https://github.com/ronb12/Bradleys-Financial-Hub.git
-   cd Bradleys-Financial-Hub
+   npm install
    ```
 
-2. Open the project in Xcode:
+2. Configure Firebase:
+   - Copy `config/config.js.example` to `config/config.js`
+   - Add your Firebase configuration
+
+3. Build the project:
    ```bash
-   open BradleysFinanceHub.xcodeproj
+   npm run build
    ```
 
-3. Select your development team in Xcode:
-   - Go to Signing & Capabilities
-   - Select your team for automatic signing
+4. Deploy to Firebase:
+   ```bash
+   firebase deploy
+   ```
 
-4. Build and run:
-   - Select a simulator or connected device
-   - Press `Cmd + R` to build and run
+## 📁 Project Structure
+
+```
+├── config/              # Configuration files
+│   ├── config.js        # App configuration
+│   └── firebase-config.js  # Firebase initialization
+├── scripts/             # Core application scripts
+│   ├── auth.js         # Authentication logic
+│   └── service-worker.js  # Service worker for PWA
+├── src/                 # Source code
+│   ├── components/      # Reusable components
+│   └── pages/        # Page components
+├── dist/                # Build output (deployed to Firebase)
+├── public/              # Public assets
+├── docs/                # Documentation (GitHub Pages)
+├── firebase.json        # Firebase Hosting configuration
+└── README.md           # This file
+```
 
 ## 🔒 Privacy & Security
 
-- **Local Storage**: All data is stored locally on your device using Core Data
-- **No Tracking**: Zero third-party analytics or tracking services
-- **Encryption**: Data encrypted at rest with iOS security measures
-- **CloudKit Sync**: Optional iCloud sync uses Apple's encrypted CloudKit service
-- **Biometric Protection**: Face ID/Touch ID support for app access
+- **Firebase Security**: Data stored securely in Firebase with authentication
+- **Encryption**: Data encrypted in transit and at rest
+- **Authentication**: Firebase Authentication for user accounts
 
 For detailed privacy information, see our [Privacy Policy](https://ronb12.github.io/Bradleys-Financial-Hub/privacy-policy.html).
 
-## 📱 App Store
+## 🌐 Live Site
 
-Coming soon to the App Store.
+- **Production**: [https://mobile-debt-tracker.web.app/](https://mobile-debt-tracker.web.app/)
+- **GitHub Pages**: [https://ronb12.github.io/Bradleys-Financial-Hub/](https://ronb12.github.io/Bradleys-Financial-Hub/)
 
 ## 🤝 Contributing
 
@@ -142,6 +148,6 @@ For support, questions, or feature requests, please open an issue on GitHub.
 ---
 
 <div align="center">
-  <p>Made with ❤️ using SwiftUI</p>
+  <p>Made with ❤️ using Firebase and Progressive Web App technologies</p>
   <p>© 2025 Bradley's Finance Hub. All rights reserved.</p>
 </div>

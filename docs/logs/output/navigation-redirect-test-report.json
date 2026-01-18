@@ -1,0 +1,200 @@
+{
+  "timestamp": "2025-11-14T20:20:53.053Z",
+  "baseUrl": "http://localhost:3000",
+  "isLoggedIn": false,
+  "summary": {
+    "totalLinks": 14,
+    "passedLinks": 11,
+    "failedLinks": 3,
+    "redirectedToLogin": 0,
+    "totalErrors": 4,
+    "passRate": "78.6%"
+  },
+  "results": [
+    {
+      "type": "tool-card",
+      "href": "src/pages/debt/Debt_Tracker.html",
+      "text": "Debt Tracker",
+      "accessible": true,
+      "loaded": true,
+      "navigationWorked": true,
+      "redirectCorrect": true,
+      "finalUrl": "http://localhost:3000/src/pages/debt/Debt_Tracker.html",
+      "title": "Debt Tracker",
+      "errors": []
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/other/budget.html",
+      "text": "Budget Tracker",
+      "accessible": true,
+      "loaded": true,
+      "navigationWorked": true,
+      "redirectCorrect": true,
+      "finalUrl": "http://localhost:3000/src/pages/other/budget.html",
+      "title": "💰 Bradley's Budget Tracker",
+      "errors": []
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/calculators/Velocity_Calculator.html",
+      "text": "Velocity Calculator",
+      "accessible": true,
+      "loaded": true,
+      "navigationWorked": true,
+      "redirectCorrect": true,
+      "finalUrl": "http://localhost:3000/src/pages/calculators/Velocity_Calculator.html",
+      "title": "Debt Crusher – Velocity Banking Tool",
+      "errors": []
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/other/net_worth_tracker.html",
+      "text": "Net Worth Tracker",
+      "accessible": false,
+      "loaded": false,
+      "navigationWorked": true,
+      "redirectCorrect": false,
+      "finalUrl": "http://localhost:3000/src/pages/other/net_worth_tracker.html",
+      "title": "No title",
+      "errors": [
+        {
+          "message": "Navigation failed - expected src/pages/other/net_worth_tracker.html, got http://localhost:3000/src/pages/other/net_worth_tracker.html"
+        }
+      ]
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/calculators/Credit_Score_Estimator.html",
+      "text": "Credit Score Estimator",
+      "accessible": false,
+      "loaded": false,
+      "navigationWorked": true,
+      "redirectCorrect": false,
+      "finalUrl": "http://localhost:3000/src/pages/calculators/Credit_Score_Estimator.html",
+      "title": "No title",
+      "errors": [
+        {
+          "message": "Navigation failed - expected src/pages/calculators/Credit_Score_Estimator.html, got http://localhost:3000/src/pages/calculators/Credit_Score_Estimator.html"
+        }
+      ]
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/calculators/1099_calculator.html",
+      "text": "1099 Tax Estimator",
+      "accessible": true,
+      "loaded": true,
+      "navigationWorked": true,
+      "redirectCorrect": true,
+      "finalUrl": "http://localhost:3000/src/pages/calculators/1099_calculator.html",
+      "title": "1099 Contractor IRS-Compliant Tax Calculator",
+      "errors": []
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/savings/savings_goal_tracker.html",
+      "text": "Savings Goal Tracker",
+      "accessible": true,
+      "loaded": true,
+      "navigationWorked": true,
+      "redirectCorrect": true,
+      "finalUrl": "http://localhost:3000/src/pages/savings/savings_goal_tracker.html",
+      "title": "Savings Goal Tracker – Pro",
+      "errors": []
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/other/notifications.html",
+      "text": "Notifications",
+      "accessible": false,
+      "loaded": false,
+      "navigationWorked": true,
+      "redirectCorrect": false,
+      "finalUrl": "http://localhost:3000/src/pages/other/notifications.html",
+      "title": "No title",
+      "errors": [
+        {
+          "message": "Navigation failed - expected src/pages/other/notifications.html, got http://localhost:3000/src/pages/other/notifications.html"
+        }
+      ]
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/other/activity_feed.html",
+      "text": "Activity Feed",
+      "accessible": true,
+      "loaded": true,
+      "navigationWorked": true,
+      "redirectCorrect": true,
+      "finalUrl": "http://localhost:3000/src/pages/other/activity_feed.html",
+      "title": "📜 Master Activity Feed | Bradley's Financial Tools",
+      "errors": [
+        {
+          "message": "[ActivityFeed] Error waiting for auth: JSHandle@error",
+          "type": "console.error"
+        }
+      ]
+    },
+    {
+      "type": "tool-card",
+      "href": "src/pages/savings/challenge_library.html",
+      "text": "Challenge Library",
+      "accessible": true,
+      "loaded": true,
+      "navigationWorked": true,
+      "redirectCorrect": true,
+      "finalUrl": "http://localhost:3000/src/pages/savings/challenge_library.html",
+      "title": "Savings Challenge Library",
+      "errors": []
+    },
+    {
+      "type": "recommendation-link",
+      "href": "src/pages/debt/Debt_Tracker.html",
+      "text": "Track Your Debts →",
+      "accessible": true,
+      "loaded": true,
+      "navigationWorked": true,
+      "redirectCorrect": true,
+      "finalUrl": "http://localhost:3000/src/pages/debt/Debt_Tracker.html",
+      "title": "Debt Tracker",
+      "errors": []
+    },
+    {
+      "type": "recommendation-link",
+      "href": "src/pages/other/budget.html",
+      "text": "Build Your Budget →",
+      "accessible": true,
+      "loaded": true,
+      "navigationWorked": true,
+      "redirectCorrect": true,
+      "finalUrl": "http://localhost:3000/src/pages/other/budget.html",
+      "title": "💰 Bradley's Budget Tracker",
+      "errors": []
+    },
+    {
+      "type": "recommendation-link",
+      "href": "src/pages/savings/savings_goal_tracker.html",
+      "text": "Set Your Goal →",
+      "accessible": true,
+      "loaded": true,
+      "navigationWorked": true,
+      "redirectCorrect": true,
+      "finalUrl": "http://localhost:3000/src/pages/savings/savings_goal_tracker.html",
+      "title": "Savings Goal Tracker – Pro",
+      "errors": []
+    },
+    {
+      "type": "recommendation-link",
+      "href": "src/pages/calculators/Velocity_Calculator.html",
+      "text": "Calculate Strategy →",
+      "accessible": true,
+      "loaded": true,
+      "navigationWorked": true,
+      "redirectCorrect": true,
+      "finalUrl": "http://localhost:3000/src/pages/calculators/Velocity_Calculator.html",
+      "title": "Debt Crusher – Velocity Banking Tool",
+      "errors": []
+    }
+  ]
+}

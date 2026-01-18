@@ -13,6 +13,7 @@ if (typeof window !== 'undefined') {
 // Session management
 let currentUser = null;
 let sessionTimer = null;
+let countdownInterval = null; // Store countdown interval to prevent memory leaks
 let loginAttempts = 0;
 let lockoutUntil = null;
 let authStateResolved = false;
@@ -34,23 +35,40 @@ const authPromiseResolvers = [];
 function startSessionTimer() {
   clearTimeout(sessionTimer);
   sessionTimer = setTimeout(() => {
-    document.getElementById('sessionTimeout').style.display = 'block';
-    startTimeoutCountdown();
+    const sessionTimeoutElement = document.getElementById('sessionTimeout');
+    if (sessionTimeoutElement) {
+      sessionTimeoutElement.style.display = 'block';
+      startTimeoutCountdown();
+    }
   }, SESSION_TIMEOUT - 60000); // Show warning 1 minute before timeout
 }
 
 // Start timeout countdown
 function startTimeoutCountdown() {
+  // Clear any existing countdown to prevent multiple intervals
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+  }
+  
   let timeLeft = 60;
   const countdownElement = document.getElementById('timeoutCountdown');
   
-  const countdown = setInterval(() => {
+  // Check if element exists before using it
+  if (!countdownElement) {
+    console.warn('[Auth] Timeout countdown element not found');
+    return;
+  }
+  
+  countdownInterval = setInterval(() => {
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
-    countdownElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    if (countdownElement) {
+      countdownElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
     
     if (timeLeft <= 0) {
-      clearInterval(countdown);
+      clearInterval(countdownInterval);
+      countdownInterval = null;
       logout();
     }
     timeLeft--;
@@ -59,7 +77,16 @@ function startTimeoutCountdown() {
 
 // Extend session
 function extendSession() {
-  document.getElementById('sessionTimeout').style.display = 'none';
+  clearTimeout(sessionTimer);
+  sessionTimer = null;
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  const sessionTimeoutElement = document.getElementById('sessionTimeout');
+  if (sessionTimeoutElement) {
+    sessionTimeoutElement.style.display = 'none';
+  }
   startSessionTimer();
 }
 
@@ -355,6 +382,15 @@ auth.onAuthStateChanged(async user => {
       const currentPage = window.location.pathname.split('/').pop() || 'index.html';
       const isIndexPage = currentPage === 'index.html' || currentPage === '' || currentPage === '/';
       
+      // CRITICAL: Don't redirect if user is navigating to another page
+      // Check this AFTER determining the current page so navigation works properly
+      if (sessionStorage.getItem('is-navigating') === 'true') {
+        console.log('[Auth] User is navigating, skipping redirect');
+        authStateChangeTimeout = null;
+        isProcessingAuthState = false;
+        return;
+      }
+      
       if (authPages.includes(currentPage) && !isIndexPage) {
         // CRITICAL: Don't redirect if page just loaded (< 3 seconds) - wait for auth to fully restore
         const timeSincePageLoad = Date.now() - pageLoadTime;
@@ -407,6 +443,14 @@ auth.onAuthStateChanged(async user => {
           return;
         }
         
+        // CRITICAL: Never redirect if already on index.html - this prevents refresh loops
+        if (isIndexPage) {
+          console.log('[Auth] Already on index.html, skipping redirect to prevent loop');
+          authStateChangeTimeout = null;
+          isProcessingAuthState = false;
+          return;
+        }
+        
         // Check if we already redirected recently
         const history = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
         const recent = history.filter(t => (Date.now() - t) < 10000); // 10 second window
@@ -416,7 +460,22 @@ auth.onAuthStateChanged(async user => {
           sessionStorage.setItem('auth-redirect-done', 'true');
           sessionStorage.setItem('last-auth-redirect-time', Date.now().toString());
           
-          // Determine correct redirect path - use absolute path on Firebase hosting
+          // CRITICAL: Check if user is navigating to another page
+        // Don't redirect if they're in the middle of navigation
+        const navigationStartTime = sessionStorage.getItem('navigation-start-time');
+        if (navigationStartTime) {
+          const timeSinceNav = Date.now() - parseInt(navigationStartTime);
+          // If navigation started recently (< 2 seconds), don't redirect
+          if (timeSinceNav < 2000) {
+            console.log('[Auth] User is navigating, skipping redirect (started', timeSinceNav, 'ms ago)');
+            sessionStorage.removeItem('navigation-start-time');
+            authStateChangeTimeout = null;
+            isProcessingAuthState = false;
+            return;
+          }
+        }
+        
+        // Determine correct redirect path - use absolute path on Firebase hosting
           let redirectPath = '/index.html';
           const currentPath = window.location.pathname;
           

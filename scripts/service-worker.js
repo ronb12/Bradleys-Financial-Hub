@@ -1,7 +1,7 @@
-const CACHE_NAME = 'velocity-banking-v4';
-const STATIC_CACHE = 'static-v4';
-const DYNAMIC_CACHE = 'dynamic-v4';
-const VERSION = '1.3.0';
+const CACHE_NAME = 'velocity-banking-v8';
+const STATIC_CACHE = 'static-v8';
+const DYNAMIC_CACHE = 'dynamic-v8';
+const VERSION = '1.8.0';
 
 const STATIC_ASSETS = [
   '/',
@@ -94,61 +94,9 @@ self.addEventListener('fetch', event => {
   const isStaticAsset = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|webp)$/i.test(pathname);
   
   if (isStaticAsset) {
-    // For static assets, use network-first but don't interfere with module loading
-    const url = new URL(event.request.url);
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          // CRITICAL: Don't cache HTML responses for JS/CSS files - this indicates a routing error
-          const contentType = response.headers.get('content-type') || '';
-          const isJavaScript = url.pathname.endsWith('.js');
-          const isCSS = url.pathname.endsWith('.css');
-          
-          // If we requested JS/CSS but got HTML, don't cache it and log an error
-          if ((isJavaScript || isCSS) && contentType.includes('text/html')) {
-            console.error('[SW] ERROR: Got HTML response for', url.pathname, '- not caching');
-            // Delete any existing cached version to prevent serving wrong content
-            caches.open(DYNAMIC_CACHE).then(cache => cache.delete(event.request));
-            return response; // Return the response but don't cache it
-          }
-          
-          // Only cache successful responses with correct content type
-          if (response.status === 200) {
-            if (isJavaScript && contentType.includes('javascript')) {
-              const responseToCache = response.clone();
-              caches.open(DYNAMIC_CACHE)
-                .then(cache => {
-                  cache.put(event.request, responseToCache);
-                });
-            } else if (isCSS && contentType.includes('css')) {
-              const responseToCache = response.clone();
-              caches.open(DYNAMIC_CACHE)
-                .then(cache => {
-                  cache.put(event.request, responseToCache);
-                });
-            }
-          }
-          return response;
-        })
-        .catch(() => {
-          // Fallback to cache if network fails, but verify content type
-          return caches.match(event.request)
-            .then(cachedResponse => {
-              if (cachedResponse) {
-                const cachedContentType = cachedResponse.headers.get('content-type') || '';
-                const isJavaScript = url.pathname.endsWith('.js');
-                const isCSS = url.pathname.endsWith('.css');
-                
-                // Don't serve cached HTML for JS/CSS requests
-                if ((isJavaScript || isCSS) && cachedContentType.includes('text/html')) {
-                  console.error('[SW] ERROR: Cached HTML for', url.pathname, '- not serving');
-                  return fetch(event.request); // Try network again
-                }
-              }
-              return cachedResponse;
-            });
-        })
-    );
+    // DO NOT intercept - let browser fetch directly from server
+    // No event.respondWith() means service worker doesn't interfere at all
+    // This ensures JavaScript files are NEVER served from cache
     return;
   }
 

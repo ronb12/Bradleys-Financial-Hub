@@ -51,34 +51,3 @@ firestore-debug.log
 # Sensitive config (should use env variables)
 # config.js - Move sensitive data to .env
 
-# Test output
-tests/output/
-
-# iOS
-*.xcuserstate
-*.xcuserdatad
-xcuserdata/
-*.xcworkspace/xcuserdata/
-DerivedData/
-*.hmap
-*.ipa
-*.dSYM.zip
-*.dSYM
-*.app.dSYM
-*.app
-build/
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-*.xccheckout
-*.moved-aside
-*.xcscmblueprint
-*.xccheckout
-*.xcuserstate
-project.xcworkspace/xcuserdata/
-*.xcworkspace/xcuserdata/
