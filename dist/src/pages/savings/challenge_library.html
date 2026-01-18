@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Challenge Library | Bradley's Financial Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#007bff">
+  
+  <script src="/config.js"></script>
+  <script type="module" src="/firebase-config.js"></script>
+  <script src="/utils/validation.js"></script>
+  <script src="/utils/errorHandler.js"></script>
+  <script src="/utils/performance.js"></script>
+  <script src="/utils/themeManager.js"></script>
+  <script src="/utils/authHelper.js"></script>
+  <script src="/utils/dataService.js"></script>
+  <script type="module" src="/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; min-height: 100vh; }
+    .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; gap: 1rem; }
+    .page-title { display: flex; align-items: center; gap: 1rem; }
+    .page-title h1 { font-size: 2rem; font-weight: 700; color: #1e293b; }
+    .back-btn { background: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .back-btn:hover { background: #0056b3; }
+    .content-area { background: white; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .table-container { overflow-x: auto; margin-top: 2rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; background: white; }
+    .challenges-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+    .challenges-table thead { background: #f8fafc; position: sticky; top: 0; z-index: 10; }
+    .challenges-table th { padding: 1rem; text-align: left; font-weight: 600; color: #1e293b; border-bottom: 2px solid #e2e8f0; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .challenges-table td { padding: 1rem; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-size: 0.875rem; }
+    .challenges-table tbody tr:hover { background: #f8fafc; }
+    .challenges-table tbody tr:last-child td { border-bottom: none; }
+    .challenge-icon-cell { text-align: center; font-size: 1.5rem; }
+    .challenge-title-cell { font-weight: 600; color: #1e293b; }
+    .challenge-description-cell { color: #64748b; max-width: 300px; }
+    .challenge-actions-cell { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .btn-small { padding: 0.5rem 1rem; font-size: 0.875rem; }
+    
+    /* Mobile card view */
+    .challenges-mobile { display: none; margin-top: 1rem; max-height: 70vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .challenge-card-mobile { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1rem; }
+    .challenge-card-mobile:last-child { margin-bottom: 0; }
+    .challenge-header-mobile { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+    .challenge-icon-mobile { font-size: 2rem; }
+    .challenge-title-mobile { font-size: 1.25rem; font-weight: 700; color: #1e293b; flex: 1; }
+    .challenge-info-mobile { background: white; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .challenge-info-row { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0; font-size: 0.875rem; }
+    .challenge-info-row:last-child { border-bottom: none; }
+    .info-label { color: #64748b; font-weight: 500; }
+    .info-value { font-weight: 600; color: #1e293b; }
+    .challenge-actions-mobile { display: flex; flex-direction: column; gap: 0.75rem; }
+    .challenge-description-mobile { color: #64748b; font-size: 0.875rem; margin-bottom: 1rem; line-height: 1.5; }
+    .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; flex: 1; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-primary:hover { background: #0056b3; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #5a6268; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-success:hover { background: #218838; }
+    .info-section { background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; margin-top: 2rem; }
+    .info-section h3 { font-size: 1.25rem; margin-bottom: 1rem; color: #1e293b; }
+    .info-section p { color: #64748b; margin-bottom: 0.5rem; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #64748b; }
+    .empty-state h3 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #1e293b; }
+    @media (max-width: 768px) {
+      .page-container { padding: 0.75rem 0.5rem; max-width: 100%; }
+      .content-area { padding: 1rem; border-radius: 0.5rem; }
+      .page-header { margin-bottom: 1rem; padding-bottom: 0.75rem; }
+      .page-title h1 { font-size: 1.25rem; }
+      .back-btn { padding: 0.5rem 0.75rem; font-size: 0.813rem; }
+      
+      /* Hide table on mobile */
+      .table-container { display: none !important; }
+      
+      /* Show mobile card view with scroll */
+      .challenges-mobile { 
+        display: block !important; 
+        margin-top: 1rem;
+        padding-bottom: 1rem;
+        /* Smooth scrolling for mobile */
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto;
+      }
+      
+      .challenge-card-mobile { 
+        padding: 1.25rem; 
+        margin-bottom: 1rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .challenge-header-mobile { 
+        margin-bottom: 0.75rem; 
+        align-items: center;
+      }
+      .challenge-icon-mobile { font-size: 2rem; }
+      .challenge-title-mobile { font-size: 1.125rem; font-weight: 700; }
+      .challenge-description-mobile { 
+        font-size: 0.875rem; 
+        margin-bottom: 1rem; 
+        line-height: 1.5;
+        color: #64748b;
+      }
+      .challenge-info-mobile { 
+        padding: 1rem; 
+        margin-bottom: 1rem; 
+        background: white;
+        border-radius: 0.5rem;
+        border: 1px solid #e2e8f0;
+      }
+      .challenge-info-row { 
+        padding: 0.625rem 0; 
+        font-size: 0.875rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .challenge-actions-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+      }
+      .btn { 
+        width: 100%; 
+        padding: 0.875rem 1rem; 
+        font-size: 0.875rem;
+        border-radius: 0.5rem;
+      }
+      .btn-small { 
+        width: 100%; 
+        padding: 0.875rem 1rem;
+        font-size: 0.875rem;
+        border-radius: 0.5rem;
+      }
+      
+      .info-section { 
+        padding: 1rem; 
+        margin-top: 1.5rem;
+        border-radius: 0.5rem;
+      }
+      .info-section h3 { font-size: 1rem; margin-bottom: 0.75rem; }
+      .info-section p { font-size: 0.813rem; margin-bottom: 0.5rem; line-height: 1.5; }
+      
+      /* Better scrolling */
+      body { overflow-x: hidden; }
+      .content-area { overflow-x: hidden; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-title">
+        <span style="font-size: 2rem;">🏆</span>
+        <h1>Challenge Library</h1>
+      </div>
+      <a href="/index.html" class="back-btn">← Back to Home</a>
+    </div>
+    
+    <div class="content-area">
+      <h2 style="font-size: 1.5rem; margin-bottom: 1rem; color: #1e293b;">Popular Savings Challenges</h2>
+      <p style="color: #64748b; margin-bottom: 2rem;">Choose a challenge to boost your savings! Track your progress and stay motivated to reach your financial goals.</p>
+      
+      <div id="messageContainer"></div>
+      
+      <div class="table-container">
+        <table class="challenges-table" id="challengesTable">
+          <thead>
+            <tr>
+              <th>Icon</th>
+              <th>Challenge</th>
+              <th>Description</th>
+              <th>Duration</th>
+              <th>Total Savings</th>
+              <th>Difficulty</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="challengesContainer">
+            <!-- Challenges will be loaded here -->
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="challenges-mobile" id="challengesMobile">
+        <!-- Mobile card view will be loaded here -->
+      </div>
+    </div>
+    
+    <div class="info-section">
+      <h3>About Savings Challenges</h3>
+      <p>Savings challenges are fun, structured ways to build your savings habit. They provide clear goals and incremental steps to help you save money consistently over time.</p>
+      <p style="margin-top: 0.5rem;"><strong>Tip:</strong> Start with a challenge that matches your current financial situation. You can always adjust the amounts to fit your budget!</p>
+    </div>
+  </div>
+  
+  <script>
+    const challenges = [
+      {
+        id: '52-week',
+        icon: '📅',
+        title: '52-Week Challenge',
+        description: 'Save increasing amounts each week for a year. Start with $1 in week 1, $2 in week 2, and so on.',
+        duration: '52 weeks (1 year)',
+        totalSavings: '$1,378',
+        difficulty: 'Easy',
+        startAmount: 1,
+        incrementType: 'weekly',
+        incrementAmount: 1
+      },
+      {
+        id: '365-day-penny',
+        icon: '💰',
+        title: '365-Day Penny Challenge',
+        description: 'Save pennies each day matching the day number. Day 1 = 1¢, Day 2 = 2¢, up to Day 365 = $3.65.',
+        duration: '365 days (1 year)',
+        totalSavings: '$667.95',
+        difficulty: 'Easy',
+        startAmount: 0.01,
+        incrementType: 'daily',
+        incrementAmount: 0.01
+      },
+      {
+        id: '100-envelope',
+        icon: '✉️',
+        title: '100 Envelope Challenge',
+        description: 'Label envelopes 1-100 and save the amount on each envelope. Save from one envelope each week.',
+        duration: '100 weeks (~2 years)',
+        totalSavings: '$5,050',
+        difficulty: 'Medium',
+        startAmount: 1,
+        incrementType: 'weekly',
+        incrementAmount: 1
+      },
+      {
+        id: 'no-spend-month',
+        icon: '🚫',
+        title: 'No-Spend Month Challenge',
+        description: 'Avoid non-essential purchases for an entire month. Save all the money you would have spent.',
+        duration: '30 days',
+        totalSavings: 'Variable',
+        difficulty: 'Hard',
+        startAmount: 0,
+        incrementType: 'custom',
+        incrementAmount: 0
+      },
+      {
+        id: 'biweekly-100',
+        icon: '💵',
+        title: 'Biweekly $100 Challenge',
+        description: 'Save $100 every two weeks (when you get paid). Simple and consistent savings.',
+        duration: '26 weeks (1 year)',
+        totalSavings: '$2,600',
+        difficulty: 'Easy',
+        startAmount: 100,
+        incrementType: 'biweekly',
+        incrementAmount: 0
+      },
+      {
+        id: 'spare-change',
+        icon: '🪙',
+        title: 'Spare Change Challenge',
+        description: 'Save all your spare change daily. Round up purchases and save the difference.',
+        duration: 'Ongoing',
+        totalSavings: 'Variable',
+        difficulty: 'Easy',
+        startAmount: 0,
+        incrementType: 'daily',
+        incrementAmount: 0
+      }
+    ];
+    
+    let userGoals = [];
+    
+    // Wait for DataService and auth to be ready
+    async function init() {
+      try {
+        await waitForAuth(5000);
+        if (!window.DataService) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        if (window.DataService) {
+          await loadUserGoals();
+          renderChallenges();
+        } else {
+          showError('DataService not available. Please refresh the page.');
+          renderChallenges(); // Still show challenges even without DataService
+        }
+      } catch (error) {
+        console.error('Initialization error:', error);
+        renderChallenges(); // Still show challenges even on error
+      }
+    }
+    
+    async function loadUserGoals() {
+      try {
+        userGoals = await window.DataService.getSavingsGoals();
+      } catch (error) {
+        console.warn('Error loading user goals:', error);
+        userGoals = [];
+      }
+    }
+    
+    function renderChallenges() {
+      const container = document.getElementById('challengesContainer');
+      const mobileContainer = document.getElementById('challengesMobile');
+      
+      // Desktop table view
+      const challengesHtml = challenges.map(challenge => {
+        const isActive = userGoals.some(goal => goal.name && goal.name.toLowerCase().includes(challenge.id));
+        
+        const actionButton = isActive ? 
+          `<button class="btn btn-success btn-small" onclick="viewGoal('${challenge.id}')">View Progress</button>` :
+          `<button class="btn btn-primary btn-small" onclick="startChallenge('${challenge.id}')">Start Challenge</button>`;
+        
+        return `
+          <tr>
+            <td class="challenge-icon-cell">${challenge.icon}</td>
+            <td class="challenge-title-cell">${escapeHtml(challenge.title)}</td>
+            <td class="challenge-description-cell">${escapeHtml(challenge.description)}</td>
+            <td>${escapeHtml(challenge.duration)}</td>
+            <td>${escapeHtml(challenge.totalSavings)}</td>
+            <td>${escapeHtml(challenge.difficulty)}</td>
+            <td class="challenge-actions-cell">
+              ${actionButton}
+              <button class="btn btn-secondary btn-small" onclick="showChallengeInfo('${challenge.id}')">Learn More</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      
+      container.innerHTML = challengesHtml;
+      
+      // Mobile card view
+      const mobileHtml = challenges.map(challenge => {
+        const isActive = userGoals.some(goal => goal.name && goal.name.toLowerCase().includes(challenge.id));
+        
+        const actionButton = isActive ? 
+          `<button class="btn btn-success btn-small" onclick="viewGoal('${challenge.id}')">View Progress</button>` :
+          `<button class="btn btn-primary btn-small" onclick="startChallenge('${challenge.id}')">Start Challenge</button>`;
+        
+        return `
+          <div class="challenge-card-mobile">
+            <div class="challenge-header-mobile">
+              <div class="challenge-icon-mobile">${challenge.icon}</div>
+              <div class="challenge-title-mobile">${escapeHtml(challenge.title)}</div>
+            </div>
+            <div class="challenge-description-mobile">${escapeHtml(challenge.description)}</div>
+            <div class="challenge-info-mobile">
+              <div class="challenge-info-row">
+                <span class="info-label">Duration</span>
+                <span class="info-value">${escapeHtml(challenge.duration)}</span>
+              </div>
+              <div class="challenge-info-row">
+                <span class="info-label">Total Savings</span>
+                <span class="info-value">${escapeHtml(challenge.totalSavings)}</span>
+              </div>
+              <div class="challenge-info-row">
+                <span class="info-label">Difficulty</span>
+                <span class="info-value">${escapeHtml(challenge.difficulty)}</span>
+              </div>
+            </div>
+            <div class="challenge-actions-mobile">
+              ${actionButton}
+              <button class="btn btn-secondary btn-small" onclick="showChallengeInfo('${challenge.id}')">Learn More</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      mobileContainer.innerHTML = mobileHtml;
+    }
+    
+    function startChallenge(challengeId) {
+      const challenge = challenges.find(c => c.id === challengeId);
+      if (!challenge) return;
+      
+      // Calculate target amount based on challenge type
+      let targetAmount = 0;
+      
+      if (challenge.id === '52-week') {
+        targetAmount = (52 * 53) / 2; // Sum of 1 to 52
+      } else if (challenge.id === '365-day-penny') {
+        targetAmount = (365 * 366 * 0.01) / 2; // Sum of 0.01 to 3.65
+      } else if (challenge.id === '100-envelope') {
+        targetAmount = (100 * 101) / 2; // Sum of 1 to 100
+      } else if (challenge.id === 'biweekly-100') {
+        targetAmount = 2600; // 26 payments * $100
+      } else {
+        // For variable challenges, use a default
+        targetAmount = 1000;
+      }
+      
+      // Navigate to savings goal tracker with pre-filled challenge
+      const goalData = {
+        name: challenge.title,
+        targetAmount: targetAmount,
+        currentAmount: 0,
+        challengeId: challengeId
+      };
+      
+      const params = new URLSearchParams({
+        challenge: challengeId,
+        name: challenge.title,
+        target: targetAmount.toString()
+      });
+      
+      window.location.href = `/src/pages/savings/savings_goal_tracker.html?${params.toString()}`;
+    }
+    
+    function viewGoal(challengeId) {
+      // Navigate to savings goal tracker to view progress
+      window.location.href = `/src/pages/savings/savings_goal_tracker.html`;
+    }
+    
+    function showChallengeInfo(challengeId) {
+      const challenge = challenges.find(c => c.id === challengeId);
+      if (!challenge) return;
+      
+      let info = `\n${challenge.title}\n\n`;
+      info += `${challenge.description}\n\n`;
+      info += `Duration: ${challenge.duration}\n`;
+      info += `Total Savings: ${challenge.totalSavings}\n`;
+      info += `Difficulty: ${challenge.difficulty}\n\n`;
+      
+      if (challenge.id === '52-week') {
+        info += `How it works:\n- Week 1: Save $1\n- Week 2: Save $2\n- Week 3: Save $3\n- Continue until Week 52: Save $52\n- Total saved: $1,378`;
+      } else if (challenge.id === '365-day-penny') {
+        info += `How it works:\n- Day 1: Save 1¢ (1 penny)\n- Day 2: Save 2¢ (2 pennies)\n- Day 3: Save 3¢ (3 pennies)\n- Continue until Day 365: Save $3.65\n- Total saved: $667.95`;
+      } else if (challenge.id === '100-envelope') {
+        info += `How it works:\n- Label 100 envelopes from 1 to 100\n- Each week, pick one envelope\n- Save the amount written on it\n- After 100 weeks, you'll have $5,050`;
+      } else if (challenge.id === 'no-spend-month') {
+        info += `How it works:\n- For 30 days, only spend on essentials\n- Track everything you DON'T buy\n- Save all that money instead\n- Great for breaking spending habits`;
+      } else if (challenge.id === 'biweekly-100') {
+        info += `How it works:\n- Every two weeks (payday), save $100\n- Set up automatic transfers if possible\n- After 26 pay periods, you'll have $2,600`;
+      } else if (challenge.id === 'spare-change') {
+        info += `How it works:\n- Round up every purchase\n- Save the difference\n- Or save all physical change\n- Every little bit adds up!`;
+      }
+      
+      alert(info);
+    }
+    
+    function showError(message) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div style="background: #fee; color: #c33; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">${escapeHtml(message)}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

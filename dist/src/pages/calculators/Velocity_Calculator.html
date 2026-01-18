@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Velocity Calculator | Bradley's Financial Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#007bff">
+  
+  <script src="/config.js"></script>
+  <script type="module" src="/firebase-config.js"></script>
+  <script src="/utils/validation.js"></script>
+  <script src="/utils/errorHandler.js"></script>
+  <script src="/utils/performance.js"></script>
+  <script src="/utils/themeManager.js"></script>
+  <script src="/utils/authHelper.js"></script>
+  <script type="module" src="/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; min-height: 100vh; }
+    .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; gap: 1rem; }
+    .page-title { display: flex; align-items: center; gap: 1rem; }
+    .page-title h1 { font-size: 2rem; font-weight: 700; color: #1e293b; }
+    .back-btn { background: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .back-btn:hover { background: #0056b3; }
+    .content-area { background: white; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .calc-section { margin-bottom: 2rem; }
+    .calc-section h2 { font-size: 1.5rem; margin-bottom: 1rem; color: #1e293b; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .form-group { }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; }
+    .form-group input { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; }
+    .form-group input:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+    .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-primary:hover { background: #0056b3; }
+    .results-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 0.75rem; margin-top: 2rem; }
+    .results-card h3 { font-size: 1.25rem; margin-bottom: 1rem; opacity: 0.9; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem; }
+    .result-item { }
+    .result-label { font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem; }
+    .result-value { font-size: 2rem; font-weight: 700; }
+    .info-section { background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; margin-top: 2rem; }
+    .info-section h3 { font-size: 1.25rem; margin-bottom: 1rem; color: #1e293b; }
+    .info-section ul { list-style-position: inside; color: #64748b; }
+    .info-section li { margin-bottom: 0.5rem; }
+    .error-message { background: #fee; color: #c33; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .payment-table-section { margin-top: 2rem; }
+    .print-button-container { margin-top: 2rem; text-align: center; }
+    .btn-print { background: #28a745; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-print:hover { background: #218838; }
+    @media print {
+      body * { visibility: hidden; }
+      .print-section, .print-section * { visibility: visible; }
+      .print-section { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+      .payment-table { page-break-inside: avoid; }
+      .results-card { page-break-inside: avoid; }
+    }
+    .payment-table-section h3 { font-size: 1.25rem; margin-bottom: 1rem; color: #1e293b; }
+    .payment-table-wrapper { overflow-x: auto; margin-top: 1rem; }
+    .payment-table { width: 100%; border-collapse: collapse; background: white; border-radius: 0.5rem; overflow: hidden; }
+    .payment-table th { background: #f8fafc; padding: 0.75rem 0.5rem; text-align: left; font-weight: 600; color: #64748b; font-size: 0.875rem; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+    .payment-table td { padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-size: 0.875rem; white-space: nowrap; }
+    .payment-table tr:hover { background: #f8fafc; }
+    .payment-table tr:last-child td { border-bottom: none; font-weight: 600; }
+    @media (max-width: 768px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .result-grid { grid-template-columns: 1fr; }
+      .payment-table { font-size: 0.75rem; }
+      .payment-table th, .payment-table td { padding: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-title">
+        <span style="font-size: 2rem;">⚡</span>
+        <h1>Velocity Calculator</h1>
+      </div>
+      <a href="/index.html" class="back-btn">← Back to Home</a>
+    </div>
+    
+    <div class="content-area">
+      <div class="calc-section">
+        <h2>Calculate Your Velocity Banking Strategy</h2>
+        <p style="color: #64748b; margin-bottom: 2rem;">Velocity banking uses a line of credit to accelerate debt payoff and save on interest. Enter your financial information below to see how much you could save.</p>
+        
+        <div id="messageContainer"></div>
+        
+        <form id="velocityForm" onsubmit="calculateVelocity(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="debtBalance">Current Debt Balance *</label>
+              <input type="number" id="debtBalance" required min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label for="debtInterest">Debt Interest Rate (%) *</label>
+              <input type="number" id="debtInterest" required min="0" max="100" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label for="monthlyPayment">Monthly Payment Amount *</label>
+              <input type="number" id="monthlyPayment" required min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label for="locType">Type of Line of Credit *</label>
+              <select id="locType" required style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; background: white; color: #1e293b;">
+                <option value="HELOC">HELOC (Home Equity Line of Credit)</option>
+                <option value="PersonalLOC" selected>Personal Line of Credit</option>
+                <option value="CreditCard">Credit Card</option>
+                <option value="BusinessLOC">Business Line of Credit</option>
+                <option value="Other">Other</option>
+              </select>
+              <small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.875rem;">Select the type of LOC you're using</small>
+            </div>
+            <div class="form-group">
+              <label for="locBalance">Line of Credit Balance</label>
+              <input type="number" id="locBalance" min="0" step="0.01" placeholder="0.00" value="0">
+            </div>
+            <div class="form-group">
+              <label for="locLimit">Line of Credit Limit *</label>
+              <input type="number" id="locLimit" required min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label for="locInterest">LOC Interest Rate (%)</label>
+              <input type="number" id="locInterest" min="0" max="100" step="0.01" placeholder="0.00" value="0">
+            </div>
+            <div class="form-group">
+              <label for="monthlyIncome">Monthly Income *</label>
+              <input type="number" id="monthlyIncome" required min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label for="monthlyExpenses">Monthly Expenses *</label>
+              <input type="number" id="monthlyExpenses" required min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label for="locMinPayment">Minimum LOC Payment (Optional)</label>
+              <input type="number" id="locMinPayment" min="0" step="0.01" placeholder="0.00" value="0">
+              <small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.875rem;">Minimum payment required on LOC</small>
+            </div>
+            <div class="form-group">
+              <label for="extraPayments">Extra Monthly Payments (Optional)</label>
+              <input type="number" id="extraPayments" min="0" step="0.01" placeholder="0.00" value="0">
+              <small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.875rem;">Additional payments toward debt</small>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Calculate Strategy</button>
+        </form>
+      </div>
+      
+      <div id="resultsSection" style="display: none;" class="print-section">
+        <div class="print-button-container no-print">
+          <button class="btn btn-print" onclick="printResults()">🖨️ Print / Save as PDF</button>
+        </div>
+        
+        <!-- Traditional Method Results -->
+        <div class="results-card" style="background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); margin-bottom: 2rem;">
+          <h3>Traditional Payoff Method</h3>
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="result-label">Payoff Time</div>
+              <div class="result-value" id="traditionalTime">-</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Interest Paid</div>
+              <div class="result-value" id="traditionalInterest">-</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Payments</div>
+              <div class="result-value" id="traditionalTotalPayments">-</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Cost</div>
+              <div class="result-value" id="traditionalTotalCost">-</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Velocity Banking Results -->
+        <div class="results-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin-bottom: 2rem;">
+          <h3>Velocity Banking Method</h3>
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="result-label">Payoff Time</div>
+              <div class="result-value" id="velocityTime">-</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Interest Paid</div>
+              <div class="result-value" id="velocityInterest">-</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Payments</div>
+              <div class="result-value" id="velocityTotalPayments">-</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Cost</div>
+              <div class="result-value" id="velocityTotalCost">-</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Monthly Cash Flow</div>
+              <div class="result-value" id="velocityCashFlow">-</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Avg Monthly Payment</div>
+              <div class="result-value" id="velocityAvgPayment">-</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Comparison & Savings -->
+        <div class="results-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); margin-bottom: 2rem;">
+          <h3>Savings Comparison</h3>
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="result-label">Time Saved</div>
+              <div class="result-value" id="timeSaved">-</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Interest Saved</div>
+              <div class="result-value" id="interestSaved">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Savings</div>
+              <div class="result-value" id="totalSavings">-</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Savings Percentage</div>
+              <div class="result-value" id="savingsPercentage">-</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Explanation Section -->
+        <div id="explanationSection" class="info-section" style="margin-top: 2rem;">
+          <h3>Why Velocity Banking Works Better</h3>
+          <div id="explanationContent">
+            <!-- Explanation will be populated by JavaScript -->
+          </div>
+        </div>
+        
+        <!-- Separate Payment Schedules -->
+        <div class="payment-table-section">
+          <h3>Traditional Method Payment Schedule</h3>
+          <div class="payment-table-wrapper">
+            <table class="payment-table" id="traditionalTable">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Payment</th>
+                  <th>Principal</th>
+                  <th>Interest</th>
+                  <th>Balance</th>
+                </tr>
+              </thead>
+              <tbody id="traditionalTableBody">
+                <!-- Traditional schedule will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div class="payment-table-section" style="margin-top: 2rem;">
+          <h3>Velocity Banking Payment Schedule</h3>
+          <div class="payment-table-wrapper">
+            <table class="payment-table" id="velocityTable">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Payment</th>
+                  <th>Principal</th>
+                  <th>Interest</th>
+                  <th>Balance</th>
+                </tr>
+              </thead>
+              <tbody id="velocityTableBody">
+                <!-- Velocity schedule will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div class="payment-table-section" style="margin-top: 2rem;">
+          <h3>Side-by-Side Comparison</h3>
+          <div class="payment-table-wrapper">
+            <table class="payment-table" id="paymentTable">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Traditional<br>Payment</th>
+                  <th>Traditional<br>Principal</th>
+                  <th>Traditional<br>Interest</th>
+                  <th>Traditional<br>Balance</th>
+                  <th>Velocity<br>Payment</th>
+                  <th>Velocity<br>Principal</th>
+                  <th>Velocity<br>Interest</th>
+                  <th>Velocity<br>Balance</th>
+                </tr>
+              </thead>
+              <tbody id="paymentTableBody">
+                <!-- Payment schedule will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <h3>How Velocity Banking Works</h3>
+        <ul>
+          <li>Use your line of credit (HELOC, Personal LOC, or Credit Card) to pay off high-interest debt</li>
+          <li>Your income goes into the line of credit instead of checking account</li>
+          <li>Pay all expenses from the line of credit throughout the month</li>
+          <li>Income timing reduces the average daily balance on the LOC</li>
+          <li>Lower average daily balance = less interest charged</li>
+          <li>The saved interest can be used to pay down debt faster</li>
+          <li>Net cash flow (income - expenses) reduces average balance, saving more on interest</li>
+          <li><strong>LOC Types:</strong> HELOCs typically have lower rates but require home equity. Personal LOCs offer flexibility. Credit cards have higher rates but are widely accessible.</li>
+        </ul>
+        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem;"><strong>Note:</strong> This calculator is for educational purposes. Always consult with a financial advisor before implementing velocity banking strategies.</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    function calculateVelocity(event) {
+      event.preventDefault();
+      
+      // Get and validate input values
+      const debtBalanceInput = document.getElementById('debtBalance').value.trim();
+      const debtInterestInput = document.getElementById('debtInterest').value.trim();
+      const monthlyPaymentInput = document.getElementById('monthlyPayment').value.trim();
+      const locBalanceInput = document.getElementById('locBalance').value.trim() || '0';
+      const locLimitInput = document.getElementById('locLimit').value.trim();
+      const locInterestInput = document.getElementById('locInterest').value.trim() || '0';
+      const monthlyIncomeInput = document.getElementById('monthlyIncome').value.trim();
+      const monthlyExpensesInput = document.getElementById('monthlyExpenses').value.trim();
+      const locMinPaymentInput = document.getElementById('locMinPayment').value.trim() || '0';
+      const extraPaymentsInput = document.getElementById('extraPayments').value.trim() || '0';
+      const locTypeInput = document.getElementById('locType').value.trim();
+      
+      // Parse to numbers
+      const debtBalance = parseFloat(debtBalanceInput);
+      const debtInterest = parseFloat(debtInterestInput);
+      const monthlyPayment = parseFloat(monthlyPaymentInput);
+      const locBalance = parseFloat(locBalanceInput);
+      const locLimit = parseFloat(locLimitInput);
+      const locInterest = parseFloat(locInterestInput);
+      const monthlyIncome = parseFloat(monthlyIncomeInput);
+      const monthlyExpenses = parseFloat(monthlyExpensesInput);
+      const locMinPayment = parseFloat(locMinPaymentInput);
+      const extraPayments = parseFloat(extraPaymentsInput);
+      const locType = locTypeInput;
+      
+      // Validate required fields
+      if (isNaN(debtBalance) || isNaN(debtInterest) || isNaN(monthlyPayment) || isNaN(locLimit) || isNaN(monthlyIncome) || isNaN(monthlyExpenses) || !locType) {
+        showError('Please fill in all required fields (Debt Balance, Debt Interest Rate, Monthly Payment, LOC Type, LOC Limit, Monthly Income, and Monthly Expenses).');
+        return;
+      }
+      
+      // Validate values are not negative
+      if (debtBalance < 0 || debtInterest < 0 || debtInterest > 100 || monthlyPayment < 0 || locBalance < 0 || locLimit < 0 || locInterest < 0 || locInterest > 100 || monthlyIncome < 0 || monthlyExpenses < 0 || locMinPayment < 0 || extraPayments < 0) {
+        showError('Please enter valid positive values. Interest rates must be between 0-100%.');
+        return;
+      }
+      
+      // Validate minimum payment is greater than interest (to ensure debt can be paid off)
+      const monthlyRate = debtInterest / 100 / 12;
+      if (monthlyPayment <= debtBalance * monthlyRate) {
+        showError('Monthly payment must be greater than the monthly interest to pay off debt. Minimum payment: ' + formatCurrency(debtBalance * monthlyRate * 1.01) + ' or higher.');
+        return;
+      }
+      
+      // Validate LOC limit is sufficient
+      if (locLimit < locBalance) {
+        showError('LOC Limit must be greater than or equal to LOC Balance.');
+        return;
+      }
+      
+      // Traditional payoff calculation (monthly compounding)
+      let traditionalBalance = debtBalance;
+      let traditionalMonths = 0;
+      let traditionalTotalInterest = 0;
+      const traditionalSchedule = [];
+      
+      while (traditionalBalance > 0.01 && traditionalMonths < 600) {
+        const interest = traditionalBalance * monthlyRate;
+        traditionalTotalInterest += interest;
+        const principal = monthlyPayment - interest;
+        const balanceBefore = traditionalBalance;
+        traditionalSchedule.push({
+          month: traditionalMonths + 1,
+          balance: balanceBefore,
+          payment: monthlyPayment,
+          principal: principal,
+          interest: interest
+        });
+        traditionalBalance = Math.max(0, traditionalBalance - principal);
+        traditionalMonths++;
+      }
+      
+      // Velocity banking calculation
+      // Velocity banking works by:
+      // 1. Income goes into LOC (reduces LOC balance)
+      // 2. Expenses come from LOC (increases LOC balance)
+      // 3. Net cash flow = income - expenses reduces average daily balance
+      // 4. This reduces interest on LOC used to pay debt
+      
+      const availableCredit = locLimit - locBalance;
+      const netCashFlow = monthlyIncome - monthlyExpenses;
+      
+      // Account for minimum LOC payment if required
+      // Minimum LOC payment reduces available cash flow for debt payments
+      const availableCashAfterLOCPayment = netCashFlow - Math.max(0, locMinPayment);
+      
+      // Validate there's enough cash flow after LOC payment
+      if (availableCashAfterLOCPayment < 0) {
+        showError('Monthly expenses plus minimum LOC payment cannot exceed monthly income.');
+        return;
+      }
+      
+      // Calculate how much debt can be transferred to LOC (limited by available credit)
+      const debtToTransfer = Math.min(debtBalance, availableCredit);
+      
+      // Use LOC rate if it's lower than debt rate, otherwise use debt rate
+      const effectiveLOCRate = (locInterest > 0 && locInterest < debtInterest) ? locInterest : debtInterest;
+      const velocityMonthlyRate = effectiveLOCRate / 100 / 12;
+      
+      // Velocity balance starts with debt balance
+      // But interest is calculated on average daily balance, which is reduced by cash flow timing
+      const velocityEffectiveBalance = debtBalance;
+      
+      let velocityBalance = velocityEffectiveBalance;
+      let velocityMonths = 0;
+      let velocityTotalInterest = 0;
+      const velocitySchedule = [];
+      
+      while (velocityBalance > 0.01 && velocityMonths < 600) {
+        // Velocity banking: Income reduces average daily balance, expenses increase it
+        // Average daily balance = (start balance + end balance) / 2
+        // Income comes in early in month, expenses spread throughout
+        
+        // Calculate average daily balance with cash flow timing
+        let avgDailyBalance = velocityBalance;
+        
+        if (debtToTransfer > 0 && availableCashAfterLOCPayment > 0) {
+          // Income reduces average daily balance by being received early
+          // Simplified: Assume income reduces balance by ~50% of available cash flow for half the month
+          const balanceReductionFromIncome = Math.min(availableCashAfterLOCPayment * 0.5, velocityBalance * 0.3);
+          avgDailyBalance = Math.max(0, velocityBalance - balanceReductionFromIncome);
+        }
+        
+        const interest = avgDailyBalance * velocityMonthlyRate;
+        velocityTotalInterest += interest;
+        
+        // Payment: Monthly payment + extra from net cash flow + extra payments
+        const extraFromCashFlow = availableCashAfterLOCPayment > 0 ? Math.min(availableCashAfterLOCPayment * 0.2, velocityBalance * 0.05) : 0;
+        const totalPayment = monthlyPayment + extraFromCashFlow + extraPayments;
+        const principal = totalPayment - interest;
+        const balanceBefore = velocityBalance;
+        
+        velocitySchedule.push({
+          month: velocityMonths + 1,
+          balance: balanceBefore,
+          payment: totalPayment,
+          principal: principal,
+          interest: interest
+        });
+        
+        velocityBalance = Math.max(0, velocityBalance - principal);
+        velocityMonths++;
+      }
+      
+      // Calculate totals
+      const totalTraditionalPayments = traditionalSchedule.reduce((sum, p) => sum + (p.payment || 0), 0);
+      const totalVelocityPayments = velocitySchedule.reduce((sum, p) => sum + (p.payment || 0), 0);
+      const totalTraditionalCost = debtBalance + traditionalTotalInterest;
+      const totalVelocityCost = debtBalance + velocityTotalInterest;
+      const interestSavings = traditionalTotalInterest - velocityTotalInterest;
+      const totalSavings = totalTraditionalCost - totalVelocityCost;
+      const savingsPercentage = totalTraditionalCost > 0 ? ((totalSavings / totalTraditionalCost) * 100) : 0;
+      
+      // Calculate average monthly payment for velocity
+      const avgVelocityPayment = velocityMonths > 0 ? totalVelocityPayments / velocityMonths : 0;
+      
+      // Display Traditional Method Results
+      document.getElementById('traditionalTime').textContent = formatTime(traditionalMonths);
+      document.getElementById('traditionalInterest').textContent = formatCurrency(traditionalTotalInterest);
+      document.getElementById('traditionalTotalPayments').textContent = formatCurrency(totalTraditionalPayments);
+      document.getElementById('traditionalTotalCost').textContent = formatCurrency(totalTraditionalCost);
+      
+      // Display Velocity Method Results
+      document.getElementById('velocityTime').textContent = formatTime(velocityMonths);
+      document.getElementById('velocityInterest').textContent = formatCurrency(velocityTotalInterest);
+      document.getElementById('velocityTotalPayments').textContent = formatCurrency(totalVelocityPayments);
+      document.getElementById('velocityTotalCost').textContent = formatCurrency(totalVelocityCost);
+      document.getElementById('velocityCashFlow').textContent = formatCurrency(availableCashAfterLOCPayment);
+      document.getElementById('velocityAvgPayment').textContent = formatCurrency(avgVelocityPayment);
+      
+      // Display Savings Comparison
+      document.getElementById('timeSaved').textContent = formatTime(traditionalMonths - velocityMonths);
+      document.getElementById('interestSaved').textContent = formatCurrency(Math.max(0, interestSavings));
+      document.getElementById('totalSavings').textContent = formatCurrency(Math.max(0, totalSavings));
+      document.getElementById('savingsPercentage').textContent = savingsPercentage.toFixed(1) + '%';
+      
+      // Generate explanation based on calculations
+      generateExplanation(traditionalMonths, velocityMonths, traditionalTotalInterest, velocityTotalInterest, 
+                          totalTraditionalCost, totalVelocityCost, interestSavings, totalSavings, 
+                          availableCashAfterLOCPayment, effectiveLOCRate, debtInterest);
+      
+      // Display payment schedule table (first 12 months + last month)
+      displayPaymentSchedule(traditionalSchedule, velocitySchedule, traditionalMonths, velocityMonths);
+      
+      document.getElementById('resultsSection').style.display = 'block';
+      document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    // Generate explanation based on calculations
+    function generateExplanation(tradMonths, velMonths, tradInterest, velInterest, tradCost, velCost, 
+                                interestSavings, totalSavings, availableCash, locRate, debtRate) {
+      const explanationDiv = document.getElementById('explanationContent');
+      const monthsSaved = tradMonths - velMonths;
+      const isVelocityBetter = velMonths < tradMonths || velInterest < tradInterest;
+      const monthlyPayment = parseFloat(document.getElementById('monthlyPayment').value) || 0;
+      
+      let explanation = '';
+      
+      if (isVelocityBetter) {
+        explanation += `
+          <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem;">
+            <h4 style="color: #155724; margin-bottom: 0.5rem;">✅ Velocity Banking is More Effective</h4>
+            <p style="color: #155724; margin: 0;">Based on your calculations, velocity banking saves you <strong>${formatCurrency(totalSavings)}</strong> and <strong>${formatTime(monthsSaved)}</strong> compared to traditional payoff.</p>
+          </div>
+        `;
+      } else {
+        explanation += `
+          <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem;">
+            <h4 style="color: #856404; margin-bottom: 0.5rem;">⚠️ Traditional Method May Be Better</h4>
+            <p style="color: #856404; margin: 0;">Based on your inputs, traditional payoff may be more suitable. Consider reviewing your LOC interest rate and available credit.</p>
+          </div>
+        `;
+      }
+      
+      explanation += `
+        <div style="margin-top: 1.5rem;">
+          <h4 style="color: #1e293b; margin-bottom: 1rem;">Key Differences:</h4>
+          <div style="display: grid; gap: 1rem;">
+            <div style="padding: 1rem; background: #f8fafc; border-radius: 0.5rem; border-left: 4px solid #6c757d;">
+              <h5 style="color: #1e293b; margin-bottom: 0.5rem;">Traditional Method:</h5>
+              <ul style="color: #64748b; margin-left: 1.5rem; line-height: 1.8;">
+                <li>Pays debt directly with fixed monthly payment of ${formatCurrency(monthlyPayment)}</li>
+                <li>Interest calculated on full balance each month</li>
+                <li>No cash flow optimization</li>
+                <li>Total interest: <strong>${formatCurrency(tradInterest)}</strong></li>
+                <li>Total cost: <strong>${formatCurrency(tradCost)}</strong></li>
+                <li>Payoff time: <strong>${formatTime(tradMonths)}</strong></li>
+              </ul>
+            </div>
+            
+            <div style="padding: 1rem; background: #f8fafc; border-radius: 0.5rem; border-left: 4px solid #667eea;">
+              <h5 style="color: #1e293b; margin-bottom: 0.5rem;">Velocity Banking Method:</h5>
+              <ul style="color: #64748b; margin-left: 1.5rem; line-height: 1.8;">
+                <li>Uses LOC to optimize cash flow timing</li>
+                <li>Income reduces average daily balance, lowering interest</li>
+                <li>Net cash flow (${formatCurrency(availableCash)}) reduces effective balance</li>
+                ${locRate < debtRate ? `<li>Lower LOC rate (${locRate.toFixed(2)}% vs ${debtRate.toFixed(2)}%) saves on interest</li>` : locRate > 0 && locRate >= debtRate ? `<li>LOC rate (${locRate.toFixed(2)}%) is ${locRate >= debtRate ? 'higher or equal' : 'similar'} to debt rate, but cash flow optimization still helps</li>` : ''}
+                <li>Total interest: <strong>${formatCurrency(velInterest)}</strong></li>
+                <li>Total cost: <strong>${formatCurrency(velCost)}</strong></li>
+                <li>Payoff time: <strong>${formatTime(velMonths)}</strong></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #e7f3ff; border-radius: 0.5rem; border-left: 4px solid #007bff;">
+          <h4 style="color: #004085; margin-bottom: 0.5rem;">Why Velocity Banking ${isVelocityBetter ? 'Works Better' : 'May Not Be Better'}:</h4>
+          <ol style="color: #004085; margin-left: 1.5rem; line-height: 1.8;">
+            ${isVelocityBetter ? `
+            <li><strong>Average Daily Balance Reduction:</strong> By depositing income into the LOC first, the average daily balance is lower, reducing interest charges by approximately ${formatCurrency(interestSavings)}.</li>
+            <li><strong>Cash Flow Timing:</strong> Income received early in the month (${formatCurrency(availableCash)} net cash flow) reduces the balance for a longer period, minimizing interest accumulation.</li>
+            ${locRate < debtRate ? `<li><strong>Lower Interest Rate Advantage:</strong> Using LOC at ${locRate.toFixed(2)}% instead of debt at ${debtRate.toFixed(2)}% saves ${formatCurrency(interestSavings)} in interest over the payoff period.</li>` : ''}
+            ${monthsSaved > 0 ? `<li><strong>Faster Payoff:</strong> Velocity banking pays off debt ${formatTime(monthsSaved)} faster (${formatTime(velMonths)} vs ${formatTime(tradMonths)}), saving both time and money.</li>` : ''}
+            <li><strong>Compound Savings:</strong> Lower interest means more money goes toward principal each month, accelerating payoff even further and creating a compounding effect.</li>
+            ` : `
+            <li><strong>Interest Rate Comparison:</strong> Your LOC rate (${locRate > 0 ? locRate.toFixed(2) : 'N/A'}%) is ${locRate >= debtRate ? 'not lower than' : 'similar to'} your debt rate (${debtRate.toFixed(2)}%), which limits the benefit.</li>
+            <li><strong>Cash Flow Impact:</strong> With ${formatCurrency(availableCash)} net cash flow, the average daily balance reduction may not be significant enough to offset other factors.</li>
+            <li><strong>Considerations:</strong> Traditional method may be simpler and more predictable for your situation. Review your LOC terms and ensure you have sufficient available credit.</li>
+            `}
+          </ol>
+        </div>
+      `;
+      
+      explanationDiv.innerHTML = explanation;
+    }
+    
+    function formatTime(months) {
+      if (months < 12) {
+        return months + ' month' + (months !== 1 ? 's' : '');
+      }
+      const years = Math.floor(months / 12);
+      const remainingMonths = months % 12;
+      if (remainingMonths === 0) {
+        return years + ' year' + (years !== 1 ? 's' : '');
+      }
+      return years + ' year' + (years !== 1 ? 's' : '') + ', ' + remainingMonths + ' month' + (remainingMonths !== 1 ? 's' : '');
+    }
+    
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      }).format(amount || 0);
+    }
+    
+    function showError(message) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+    
+    function displayPaymentSchedule(traditionalSchedule, velocitySchedule, traditionalMonths, velocityMonths) {
+      // Display Traditional Schedule
+      const tradTbody = document.getElementById('traditionalTableBody');
+      tradTbody.innerHTML = '';
+      displaySingleSchedule(tradTbody, traditionalSchedule, traditionalMonths, 'traditional');
+      
+      // Display Velocity Schedule
+      const velTbody = document.getElementById('velocityTableBody');
+      velTbody.innerHTML = '';
+      displaySingleSchedule(velTbody, velocitySchedule, velocityMonths, 'velocity');
+      
+      // Display Side-by-Side Comparison
+      const comparisonTbody = document.getElementById('paymentTableBody');
+      comparisonTbody.innerHTML = '';
+      
+      // Show first 12 months + last month + summary
+      const maxMonths = Math.max(traditionalMonths, velocityMonths);
+      const rowsToShow = new Set();
+      
+      // First 12 months
+      for (let i = 0; i < Math.min(12, maxMonths); i++) {
+        rowsToShow.add(i);
+      }
+      
+      // Last month if more than 12 months
+      if (maxMonths > 12) {
+        rowsToShow.add(maxMonths - 1);
+      }
+      
+      Array.from(rowsToShow).sort((a, b) => a - b).forEach(monthIndex => {
+        const trad = traditionalSchedule[monthIndex] || { month: monthIndex + 1, balance: 0, payment: 0, principal: 0, interest: 0 };
+        const vel = velocitySchedule[monthIndex] || { month: monthIndex + 1, balance: 0, payment: 0, principal: 0, interest: 0 };
+        
+        const row = comparisonTbody.insertRow();
+        row.innerHTML = `
+          <td><strong>${trad.month}</strong></td>
+          <td>${formatCurrency(trad.payment || 0)}</td>
+          <td>${formatCurrency(trad.principal || 0)}</td>
+          <td>${formatCurrency(trad.interest || 0)}</td>
+          <td>${formatCurrency(trad.balance || 0)}</td>
+          <td>${formatCurrency(vel.payment || 0)}</td>
+          <td>${formatCurrency(vel.principal || 0)}</td>
+          <td>${formatCurrency(vel.interest || 0)}</td>
+          <td>${formatCurrency(vel.balance || 0)}</td>
+        `;
+      });
+      
+      // Add summary row
+      const totalTradPayment = traditionalSchedule.reduce((sum, p) => sum + (p.payment || 0), 0);
+      const totalTradPrincipal = traditionalSchedule.reduce((sum, p) => sum + (p.principal || 0), 0);
+      const totalTradInterest = traditionalSchedule.reduce((sum, p) => sum + (p.interest || 0), 0);
+      const totalVelPayment = velocitySchedule.reduce((sum, p) => sum + (p.payment || 0), 0);
+      const totalVelPrincipal = velocitySchedule.reduce((sum, p) => sum + (p.principal || 0), 0);
+      const totalVelInterest = velocitySchedule.reduce((sum, p) => sum + (p.interest || 0), 0);
+      const summaryRow = comparisonTbody.insertRow();
+      summaryRow.className = 'summary-row';
+      summaryRow.innerHTML = `
+        <td><strong>Total</strong></td>
+        <td><strong>${formatCurrency(totalTradPayment)}</strong></td>
+        <td><strong>${formatCurrency(totalTradPrincipal)}</strong></td>
+        <td><strong>${formatCurrency(totalTradInterest)}</strong></td>
+        <td><strong>-</strong></td>
+        <td><strong>${formatCurrency(totalVelPayment)}</strong></td>
+        <td><strong>${formatCurrency(totalVelPrincipal)}</strong></td>
+        <td><strong>${formatCurrency(totalVelInterest)}</strong></td>
+        <td><strong>-</strong></td>
+      `;
+    }
+    
+    // Helper function to display a single schedule
+    function displaySingleSchedule(tbody, schedule, totalMonths, type) {
+      const rowsToShow = new Set();
+      
+      // First 12 months
+      for (let i = 0; i < Math.min(12, totalMonths); i++) {
+        rowsToShow.add(i);
+      }
+      
+      // Last month if more than 12 months
+      if (totalMonths > 12) {
+        rowsToShow.add(totalMonths - 1);
+      }
+      
+      Array.from(rowsToShow).sort((a, b) => a - b).forEach(monthIndex => {
+        const item = schedule[monthIndex] || { month: monthIndex + 1, balance: 0, payment: 0, principal: 0, interest: 0 };
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td><strong>${item.month}</strong></td>
+          <td>${formatCurrency(item.payment || 0)}</td>
+          <td>${formatCurrency(item.principal || 0)}</td>
+          <td>${formatCurrency(item.interest || 0)}</td>
+          <td>${formatCurrency(item.balance || 0)}</td>
+        `;
+      });
+      
+      // Add summary row
+      const totalPayment = schedule.reduce((sum, p) => sum + (p.payment || 0), 0);
+      const totalPrincipal = schedule.reduce((sum, p) => sum + (p.principal || 0), 0);
+      const totalInterest = schedule.reduce((sum, p) => sum + (p.interest || 0), 0);
+      const summaryRow = tbody.insertRow();
+      summaryRow.className = 'summary-row';
+      summaryRow.innerHTML = `
+        <td><strong>Total</strong></td>
+        <td><strong>${formatCurrency(totalPayment)}</strong></td>
+        <td><strong>${formatCurrency(totalPrincipal)}</strong></td>
+        <td><strong>${formatCurrency(totalInterest)}</strong></td>
+        <td><strong>-</strong></td>
+      `;
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Print / PDF function
+    function printResults() {
+      // Get form values for print header
+      const debtBalance = document.getElementById('debtBalance').value;
+      const debtInterest = document.getElementById('debtInterest').value;
+      const monthlyPayment = document.getElementById('monthlyPayment').value;
+      const locType = document.getElementById('locType').value;
+      const locLimit = document.getElementById('locLimit').value;
+      const locInterest = document.getElementById('locInterest').value || '0';
+      const monthlyIncome = document.getElementById('monthlyIncome').value;
+      const monthlyExpenses = document.getElementById('monthlyExpenses').value;
+      const locMinPayment = document.getElementById('locMinPayment').value || '0';
+      const extraPayments = document.getElementById('extraPayments').value || '0';
+      
+      // Create print window content
+      const printWindow = window.open('', '_blank');
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Velocity Banking Calculator Results</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+            .print-header { margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+            .print-header h1 { font-size: 24px; margin-bottom: 10px; color: #333; }
+            .print-header p { font-size: 14px; color: #666; margin: 3px 0; }
+            .print-section { margin-bottom: 20px; }
+            .print-section h2 { font-size: 18px; margin-bottom: 10px; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+            .results-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+            .result-item { padding: 10px; border: 1px solid #ddd; }
+            .result-label { font-size: 12px; color: #666; margin-bottom: 5px; }
+            .result-value { font-size: 20px; font-weight: bold; color: #333; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+            table th { background: #f0f0f0; padding: 8px; text-align: left; border: 1px solid #ddd; font-weight: 600; }
+            table td { padding: 8px; border: 1px solid #ddd; text-align: right; }
+            table th:first-child, table td:first-child { text-align: left; }
+            .summary-row { font-weight: bold; background: #f9f9f9; }
+            .input-summary { margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 5px; }
+            .input-summary h3 { font-size: 16px; margin-bottom: 10px; }
+            .input-summary p { font-size: 12px; margin: 3px 0; }
+            @page { margin: 1cm; }
+            @media print {
+              body { padding: 10px; }
+              .print-header { page-break-after: avoid; }
+              table { page-break-inside: auto; }
+              tr { page-break-inside: avoid; page-break-after: auto; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="print-header">
+            <h1>Velocity Banking Calculator Results</h1>
+            <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+          
+          <div class="input-summary">
+            <h3>Input Parameters</h3>
+            <p><strong>Debt Balance:</strong> $${parseFloat(debtBalance || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+            <p><strong>Debt Interest Rate:</strong> ${debtInterest}%</p>
+            <p><strong>Monthly Payment:</strong> $${parseFloat(monthlyPayment || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+            <p><strong>LOC Type:</strong> ${locType}</p>
+            <p><strong>LOC Limit:</strong> $${parseFloat(locLimit || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+            <p><strong>LOC Interest Rate:</strong> ${locInterest}%</p>
+            <p><strong>Monthly Income:</strong> $${parseFloat(monthlyIncome || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+            <p><strong>Monthly Expenses:</strong> $${parseFloat(monthlyExpenses || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+            ${parseFloat(locMinPayment) > 0 ? `<p><strong>Minimum LOC Payment:</strong> $${parseFloat(locMinPayment).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>` : ''}
+            ${parseFloat(extraPayments) > 0 ? `<p><strong>Extra Monthly Payments:</strong> $${parseFloat(extraPayments).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>` : ''}
+          </div>
+          
+          <div class="print-section">
+            <h2>Results Summary</h2>
+            <div class="results-grid">
+              <div class="result-item">
+                <div class="result-label">Traditional Payoff Time</div>
+                <div class="result-value" id="printTraditionalTime"></div>
+              </div>
+              <div class="result-item">
+                <div class="result-label">Velocity Payoff Time</div>
+                <div class="result-value" id="printVelocityTime"></div>
+              </div>
+              <div class="result-item">
+                <div class="result-label">Time Saved</div>
+                <div class="result-value" id="printTimeSaved"></div>
+              </div>
+              <div class="result-item">
+                <div class="result-label">Interest Saved</div>
+                <div class="result-value" id="printInterestSaved"></div>
+              </div>
+            </div>
+          </div>
+          
+                  <div class="print-section">
+                    <h2>Traditional Method Payment Schedule</h2>
+                    ${document.getElementById('traditionalTable').outerHTML}
+                  </div>
+                  
+                  <div class="print-section">
+                    <h2>Velocity Banking Payment Schedule</h2>
+                    ${document.getElementById('velocityTable').outerHTML}
+                  </div>
+                  
+                  <div class="print-section">
+                    <h2>Side-by-Side Comparison</h2>
+                    ${document.getElementById('paymentTable').outerHTML}
+                  </div>
+                  
+                  <div class="print-section">
+                    <h2>Explanation</h2>
+                    ${document.getElementById('explanationContent').innerHTML}
+                  </div>
+          
+          <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ccc; font-size: 10px; color: #666; text-align: center;">
+            <p>This calculator is for educational purposes. Always consult with a financial advisor before implementing velocity banking strategies.</p>
+            <p>Generated by Bradley's Financial Tools</p>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      // Set result values in print window
+      setTimeout(() => {
+        printWindow.document.getElementById('printTraditionalTime').textContent = document.getElementById('traditionalTime').textContent;
+        printWindow.document.getElementById('printVelocityTime').textContent = document.getElementById('velocityTime').textContent;
+        printWindow.document.getElementById('printTimeSaved').textContent = document.getElementById('timeSaved').textContent;
+        printWindow.document.getElementById('printInterestSaved').textContent = document.getElementById('interestSaved').textContent;
+        
+        // Wait a moment for content to render, then trigger print
+        setTimeout(() => {
+          printWindow.print();
+        }, 250);
+      }, 100);
+    }
+    
+    // Make print function available globally
+    window.printResults = printResults;
+  </script>
+</body>
+</html>

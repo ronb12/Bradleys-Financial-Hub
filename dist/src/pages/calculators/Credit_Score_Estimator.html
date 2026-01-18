@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Credit Score Estimator | Bradley's Financial Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#007bff">
+  
+  <script src="/config.js"></script>
+  <script type="module" src="/firebase-config.js"></script>
+  <script src="/utils/validation.js"></script>
+  <script src="/utils/errorHandler.js"></script>
+  <script src="/utils/performance.js"></script>
+  <script src="/utils/themeManager.js"></script>
+  <script src="/utils/authHelper.js"></script>
+  <script type="module" src="/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; min-height: 100vh; }
+    .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; gap: 1rem; }
+    .page-title { display: flex; align-items: center; gap: 1rem; }
+    .page-title h1 { font-size: 2rem; font-weight: 700; color: #1e293b; }
+    .back-btn { background: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .back-btn:hover { background: #0056b3; }
+    .content-area { background: white; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .score-display { text-align: center; padding: 3rem 2rem; margin-bottom: 2rem; border-radius: 0.75rem; }
+    .score-display.excellent { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+    .score-display.good { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; }
+    .score-display.fair { background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: white; }
+    .score-display.poor { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; }
+    .score-label { font-size: 1.25rem; opacity: 0.9; margin-bottom: 0.5rem; }
+    .score-value { font-size: 4rem; font-weight: 700; }
+    .score-range { font-size: 1rem; opacity: 0.9; margin-top: 0.5rem; }
+    .calc-section { margin-bottom: 2rem; }
+    .calc-section h2 { font-size: 1.5rem; margin-bottom: 1rem; color: #1e293b; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .form-group { }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; }
+    .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+    .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-primary:hover { background: #0056b3; }
+    .factors-section { background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; margin-top: 2rem; }
+    .factors-section h3 { font-size: 1.25rem; margin-bottom: 1rem; color: #1e293b; }
+    .factor-item { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0; }
+    .factor-item:last-child { border-bottom: none; }
+    .factor-label { color: #64748b; }
+    .factor-value { font-weight: 600; color: #1e293b; }
+    .factor-value.positive { color: #28a745; }
+    .factor-value.negative { color: #dc3545; }
+    .info-section { background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; margin-top: 2rem; }
+    .info-section h3 { font-size: 1.25rem; margin-bottom: 1rem; color: #1e293b; }
+    .info-section ul { list-style-position: inside; color: #64748b; }
+    .info-section li { margin-bottom: 0.5rem; }
+    .error-message { background: #fee; color: #c33; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    @media (max-width: 768px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .score-value { font-size: 3rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-title">
+        <span style="font-size: 2rem;">💳</span>
+        <h1>Credit Score Estimator</h1>
+      </div>
+      <a href="/index.html" class="back-btn">← Back to Home</a>
+    </div>
+    
+    <div class="content-area">
+      <div id="messageContainer"></div>
+      
+      <div id="scoreDisplay" style="display: none;">
+        <div class="score-display" id="scoreCard">
+          <div class="score-label">Estimated Credit Score</div>
+          <div class="score-value" id="scoreValue">0</div>
+          <div class="score-range" id="scoreRange">Range: 300-850</div>
+        </div>
+      </div>
+      
+      <div class="calc-section">
+        <h2>Enter Your Financial Information</h2>
+        <p style="color: #64748b; margin-bottom: 2rem;">This estimator provides an approximation based on common credit scoring factors. Actual scores may vary.</p>
+        
+        <form id="creditForm" onsubmit="calculateCreditScore(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="paymentHistory">Payment History</label>
+              <select id="paymentHistory" required>
+                <option value="">Select...</option>
+                <option value="excellent">Excellent (Never late)</option>
+                <option value="good">Good (1-2 late payments in 2 years)</option>
+                <option value="fair">Fair (3-5 late payments in 2 years)</option>
+                <option value="poor">Poor (Many late payments)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="creditUtilization">Credit Utilization (%)</label>
+              <input type="number" id="creditUtilization" required min="0" max="100" step="0.1" placeholder="0.0">
+            </div>
+            <div class="form-group">
+              <label for="creditAge">Average Age of Credit (Years)</label>
+              <input type="number" id="creditAge" required min="0" step="0.1" placeholder="0.0">
+            </div>
+            <div class="form-group">
+              <label for="creditInquiries">Hard Inquiries (Last 2 Years)</label>
+              <input type="number" id="creditInquiries" required min="0" step="1" placeholder="0" value="0">
+            </div>
+            <div class="form-group">
+              <label for="creditMix">Credit Mix</label>
+              <select id="creditMix" required>
+                <option value="">Select...</option>
+                <option value="excellent">Excellent (Multiple types)</option>
+                <option value="good">Good (2-3 types)</option>
+                <option value="fair">Fair (1-2 types)</option>
+                <option value="poor">Poor (1 type)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="totalAccounts">Total Open Accounts</label>
+              <input type="number" id="totalAccounts" required min="0" step="1" placeholder="0" value="0">
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Estimate Credit Score</button>
+        </form>
+      </div>
+      
+      <div id="factorsSection" style="display: none;" class="factors-section">
+        <h3>Score Breakdown by Factor</h3>
+        <div id="factorsList">
+          <!-- Factors will be populated here -->
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <h3>Credit Score Factors</h3>
+        <ul>
+          <li><strong>Payment History (35%):</strong> Whether you pay bills on time</li>
+          <li><strong>Credit Utilization (30%):</strong> How much credit you're using vs. available</li>
+          <li><strong>Credit Age (15%):</strong> Length of your credit history</li>
+          <li><strong>Credit Mix (10%):</strong> Variety of credit types (credit cards, loans, etc.)</li>
+          <li><strong>New Credit (10%):</strong> Recent hard inquiries and new accounts</li>
+        </ul>
+        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem;"><strong>Note:</strong> This is an estimation tool and not an official credit score. For your actual FICO score, check with a credit bureau or your credit card issuer.</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    function calculateCreditScore(event) {
+      event.preventDefault();
+      
+      const paymentHistory = document.getElementById('paymentHistory').value;
+      const creditUtilization = parseFloat(document.getElementById('creditUtilization').value);
+      const creditAge = parseFloat(document.getElementById('creditAge').value);
+      const creditInquiries = parseInt(document.getElementById('creditInquiries').value || 0);
+      const creditMix = document.getElementById('creditMix').value;
+      const totalAccounts = parseInt(document.getElementById('totalAccounts').value || 0);
+      
+      if (!paymentHistory || isNaN(creditUtilization) || isNaN(creditAge) || !creditMix || creditUtilization < 0 || creditUtilization > 100 || creditAge < 0) {
+        showError('Please fill in all fields with valid values.');
+        return;
+      }
+      
+      // Calculate score based on FICO factors (simplified model)
+      let score = 650; // Base score
+      const factors = {};
+      
+      // Payment History (35% impact)
+      const paymentScores = {
+        excellent: 100,
+        good: 70,
+        fair: 40,
+        poor: 0
+      };
+      const paymentScore = paymentScores[paymentHistory] || 50;
+      factors.paymentHistory = { label: 'Payment History', score: paymentScore, weight: 0.35 };
+      score += (paymentScore - 50) * 0.35 * 2; // Scale to 100 points
+      
+      // Credit Utilization (30% impact) - Lower is better
+      let utilizationScore = 100;
+      if (creditUtilization > 90) utilizationScore = 0;
+      else if (creditUtilization > 70) utilizationScore = 30;
+      else if (creditUtilization > 50) utilizationScore = 50;
+      else if (creditUtilization > 30) utilizationScore = 70;
+      else if (creditUtilization > 10) utilizationScore = 90;
+      factors.creditUtilization = { label: 'Credit Utilization', score: utilizationScore, weight: 0.30 };
+      score += (utilizationScore - 50) * 0.30 * 2;
+      
+      // Credit Age (15% impact)
+      let ageScore = 50;
+      if (creditAge > 10) ageScore = 100;
+      else if (creditAge > 7) ageScore = 85;
+      else if (creditAge > 5) ageScore = 70;
+      else if (creditAge > 3) ageScore = 55;
+      else if (creditAge > 1) ageScore = 40;
+      factors.creditAge = { label: 'Credit Age', score: ageScore, weight: 0.15 };
+      score += (ageScore - 50) * 0.15 * 2;
+      
+      // Credit Mix (10% impact)
+      const mixScores = {
+        excellent: 100,
+        good: 75,
+        fair: 50,
+        poor: 25
+      };
+      const mixScore = mixScores[creditMix] || 50;
+      factors.creditMix = { label: 'Credit Mix', score: mixScore, weight: 0.10 };
+      score += (mixScore - 50) * 0.10 * 2;
+      
+      // New Credit / Inquiries (10% impact) - Lower is better
+      let inquiryScore = 100;
+      if (creditInquiries >= 6) inquiryScore = 20;
+      else if (creditInquiries >= 4) inquiryScore = 40;
+      else if (creditInquiries >= 2) inquiryScore = 60;
+      else if (creditInquiries === 1) inquiryScore = 80;
+      factors.creditInquiries = { label: 'New Credit (Inquiries)', score: inquiryScore, weight: 0.10 };
+      score += (inquiryScore - 50) * 0.10 * 2;
+      
+      // Account diversity bonus (small impact)
+      let accountBonus = 0;
+      if (totalAccounts >= 5 && totalAccounts <= 10) accountBonus = 10;
+      else if (totalAccounts > 10) accountBonus = 5;
+      else if (totalAccounts < 2) accountBonus = -10;
+      score += accountBonus;
+      
+      // Clamp score between 300 and 850
+      score = Math.max(300, Math.min(850, Math.round(score)));
+      
+      // Determine score category
+      let category = 'poor';
+      let range = '300-579 (Poor)';
+      if (score >= 800) {
+        category = 'excellent';
+        range = '800-850 (Excellent)';
+      } else if (score >= 740) {
+        category = 'excellent';
+        range = '740-799 (Very Good)';
+      } else if (score >= 670) {
+        category = 'good';
+        range = '670-739 (Good)';
+      } else if (score >= 580) {
+        category = 'fair';
+        range = '580-669 (Fair)';
+      } else {
+        category = 'poor';
+        range = '300-579 (Poor)';
+      }
+      
+      // Display score
+      const scoreCard = document.getElementById('scoreCard');
+      scoreCard.className = 'score-display ' + category;
+      document.getElementById('scoreValue').textContent = score;
+      document.getElementById('scoreRange').textContent = 'Range: ' + range;
+      document.getElementById('scoreDisplay').style.display = 'block';
+      
+      // Display factors
+      const factorsList = document.getElementById('factorsList');
+      factorsList.innerHTML = Object.values(factors).map(factor => {
+        const impact = factor.score >= 70 ? 'positive' : factor.score >= 40 ? '' : 'negative';
+        return `
+          <div class="factor-item">
+            <span class="factor-label">${factor.label} (${(factor.weight * 100).toFixed(0)}%)</span>
+            <span class="factor-value ${impact}">${factor.score}/100</span>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('factorsSection').style.display = 'block';
+      
+      // Scroll to results
+      document.getElementById('scoreDisplay').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    function showError(message) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

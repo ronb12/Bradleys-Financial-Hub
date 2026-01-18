@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Tax Estimator | Bradley's Financial Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#007bff">
+  
+  <script src="/config.js"></script>
+  <script type="module" src="/firebase-config.js"></script>
+  <script src="/utils/validation.js"></script>
+  <script src="/utils/errorHandler.js"></script>
+  <script src="/utils/performance.js"></script>
+  <script src="/utils/themeManager.js"></script>
+  <script src="/utils/authHelper.js"></script>
+  <script type="module" src="/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; min-height: 100vh; }
+    .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; gap: 1rem; }
+    .page-title { display: flex; align-items: center; gap: 1rem; }
+    .page-title h1 { font-size: 2rem; font-weight: 700; color: #1e293b; }
+    .back-btn { background: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .back-btn:hover { background: #0056b3; }
+    .content-area { background: white; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .calc-section { margin-bottom: 2rem; }
+    .calc-section h2 { font-size: 1.5rem; margin-bottom: 1rem; color: #1e293b; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .form-group { }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; }
+    .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; background-color: #ffffff; color: #1e293b; transition: all 0.2s ease; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+    .form-group select { 
+      appearance: none; 
+      -webkit-appearance: none; 
+      -moz-appearance: none; 
+      cursor: pointer; 
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6L8 10L12 6' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); 
+      background-repeat: no-repeat; 
+      background-position: right 0.75rem center; 
+      background-size: 1rem; 
+      padding-right: 2.75rem; 
+      font-weight: 500;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .form-group select:hover { 
+      border-color: #cbd5e1; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .form-group select:active, .form-group select:focus { 
+      border-color: #007bff; 
+      background-color: #ffffff; 
+      box-shadow: 0 0 0 3px rgba(0,123,255,0.1), 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .form-group select option { 
+      padding: 0.75rem; 
+      background-color: #ffffff; 
+      color: #1e293b; 
+      font-weight: 400;
+    }
+    .form-group select option:checked { 
+      background-color: #007bff; 
+      color: #ffffff;
+    }
+    .form-group select option:hover { 
+      background-color: #f8fafc; 
+    }
+    .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-primary:hover { background: #0056b3; }
+    .results-section { margin-top: 2rem; }
+    .results-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 0.75rem; margin-bottom: 1.5rem; }
+    .results-card h3 { font-size: 1.25rem; margin-bottom: 1.5rem; opacity: 0.9; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
+    .result-item { }
+    .result-label { font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem; }
+    .result-value { font-size: 1.75rem; font-weight: 700; }
+    .quarterly-breakdown { background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; margin-top: 1.5rem; }
+    .quarterly-breakdown h4 { font-size: 1.125rem; margin-bottom: 1rem; color: #1e293b; }
+    .quarterly-item { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0; }
+    .quarterly-item:last-child { border-bottom: none; }
+    .quarter-label { color: #64748b; font-weight: 600; }
+    .quarter-value { font-weight: 700; color: #1e293b; }
+    .info-section { background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; margin-top: 2rem; }
+    .info-section h3 { font-size: 1.25rem; margin-bottom: 1rem; color: #1e293b; }
+    .info-section ul { list-style-position: inside; color: #64748b; }
+    .info-section li { margin-bottom: 0.5rem; }
+    .error-message { background: #fee; color: #c33; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    
+    /* Print Styles */
+    @media print {
+      @page {
+        margin: 0.5in;
+        size: letter;
+      }
+      
+      body {
+        background: white;
+        color: black;
+      }
+      
+      .page-container {
+        max-width: 100%;
+        padding: 0;
+      }
+      
+      .page-header,
+      .content-area > .calc-section,
+      .back-btn,
+      #messageContainer,
+      .info-section,
+      button:not(.print-only),
+      .custom-select-wrapper .custom-arrow,
+      #deductionsHelp {
+        display: none !important;
+      }
+      
+      .results-section {
+        display: block !important;
+      }
+      
+      .results-section > div:first-child {
+        page-break-after: avoid;
+      }
+      
+      .results-card {
+        background: white !important;
+        color: black !important;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border: 2px solid #000;
+        border-radius: 0;
+        page-break-inside: avoid;
+      }
+      
+      .results-card h3 {
+        color: #000 !important;
+        border-bottom: 2px solid #000;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+      }
+      
+      .result-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .result-item {
+        padding: 0.5rem;
+        border-bottom: 1px solid #ccc;
+      }
+      
+      .result-label {
+        font-weight: 600;
+        color: #333;
+      }
+      
+      .result-value {
+        color: #000;
+      }
+      
+      .quarterly-breakdown {
+        background: white;
+        border: 1px solid #000;
+        page-break-inside: avoid;
+      }
+      
+      .quarterly-breakdown h4 {
+        color: #000;
+        border-bottom: 1px solid #000;
+        padding-bottom: 0.5rem;
+      }
+      
+      .quarterly-item {
+        border-bottom: 1px solid #ccc;
+      }
+      
+      .quarter-label,
+      .quarter-value {
+        color: #000;
+      }
+      
+      /* Print header with date and title */
+      .print-header {
+        display: block;
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 3px solid #000;
+      }
+      
+      .print-header h1 {
+        font-size: 24pt;
+        margin-bottom: 0.5rem;
+        color: #000;
+      }
+      
+      .print-header .print-date {
+        font-size: 12pt;
+        color: #333;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .result-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-title">
+        <span style="font-size: 2rem;">📟</span>
+        <h1>Tax Estimator (1099 & W-2)</h1>
+      </div>
+      <a href="/index.html" class="back-btn">← Back to Home</a>
+    </div>
+    
+    <div class="content-area">
+      <div class="calc-section">
+        <h2>Calculate Your Tax Estimates</h2>
+        <p style="color: #64748b; margin-bottom: 2rem;">Estimate taxes for both W-2 employees and 1099 contractors/self-employed individuals. This calculator helps you determine how much to set aside for federal taxes.</p>
+        
+        <div id="messageContainer"></div>
+        
+        <form id="taxForm" onsubmit="calculateTax(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="incomeType">Income Type *</label>
+              <select id="incomeType" required onchange="toggleIncomeType()">
+                <option value="">Select...</option>
+                <option value="w2">W-2 Employee</option>
+                <option value="1099">1099 Self-Employed</option>
+                <option value="both">Both (W-2 + 1099)</option>
+              </select>
+            </div>
+            <div class="form-group" id="w2IncomeGroup" style="display: none;">
+              <label for="w2Income">W-2 Income (Annual) *</label>
+              <input type="number" id="w2Income" min="0" step="0.01" placeholder="0.00" value="0">
+              <small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.875rem;">Your salary/wages as W-2 employee</small>
+            </div>
+            <div class="form-group" id="1099IncomeGroup" style="display: none;">
+              <label for="grossIncome">1099 Income (Annual) *</label>
+              <input type="number" id="grossIncome" min="0" step="0.01" placeholder="0.00" value="0">
+              <small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.875rem;">Your self-employment income</small>
+            </div>
+            <div class="form-group">
+              <label for="deductions">
+                Total Deductions (Annual)
+                <button type="button" onclick="toggleDeductionsHelp()" style="background: none; border: none; color: #007bff; cursor: pointer; font-size: 1rem; margin-left: 0.5rem; padding: 0;" title="Click for deduction information">ℹ️</button>
+              </label>
+              <input type="number" id="deductions" min="0" step="0.01" placeholder="0.00" value="0">
+              <div id="deductionsHelp" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8fafc; border-left: 4px solid #007bff; border-radius: 0.5rem;">
+                <h4 style="font-size: 1rem; margin-bottom: 0.75rem; color: #1e293b;">Common Tax Deductions:</h4>
+                
+                <div style="margin-bottom: 1rem;">
+                  <strong style="color: #1e293b; display: block; margin-bottom: 0.5rem;">For 1099 Self-Employed:</strong>
+                  <ul style="margin-left: 1.5rem; color: #64748b; font-size: 0.9rem; line-height: 1.8;">
+                    <li><strong>Business Expenses:</strong> Office supplies, equipment, software subscriptions</li>
+                    <li><strong>Home Office Deduction:</strong> If you use part of your home exclusively for business</li>
+                    <li><strong>Vehicle Expenses:</strong> Mileage or actual expenses for business use of car</li>
+                    <li><strong>Professional Services:</strong> Legal fees, accounting fees, business consulting</li>
+                    <li><strong>Travel & Meals:</strong> Business travel, client meals (50% deductible)</li>
+                    <li><strong>Health Insurance Premiums:</strong> Self-employed health insurance deductions</li>
+                    <li><strong>Retirement Contributions:</strong> SEP-IRA, Solo 401(k) contributions</li>
+                    <li><strong>Marketing & Advertising:</strong> Website costs, business cards, online ads</li>
+                    <li><strong>Education:</strong> Professional development courses related to your business</li>
+                    <li><strong>Utilities & Internet:</strong> Business portion of phone, internet, utilities</li>
+                  </ul>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                  <strong style="color: #1e293b; display: block; margin-bottom: 0.5rem;">For W-2 Employees:</strong>
+                  <ul style="margin-left: 1.5rem; color: #64748b; font-size: 0.9rem; line-height: 1.8;">
+                    <li><strong>Itemized Deductions:</strong> Medical expenses (7.5% AGI threshold), state/local taxes (up to $10,000)</li>
+                    <li><strong>Mortgage Interest:</strong> Interest on mortgage for primary and second home</li>
+                    <li><strong>Charitable Contributions:</strong> Donations to qualified charities</li>
+                    <li><strong>Student Loan Interest:</strong> Up to $2,500 (income limits apply)</li>
+                    <li><strong>HSA Contributions:</strong> Health Savings Account contributions (if eligible)</li>
+                    <li><strong>IRA Contributions:</strong> Traditional IRA contributions (income limits apply)</li>
+                  </ul>
+                </div>
+                
+                <div style="padding: 0.75rem; background: #fff3cd; border-radius: 0.25rem; font-size: 0.85rem; color: #856404;">
+                  <strong>Note:</strong> Most taxpayers take the standard deduction ($14,600 single, $29,200 married filing jointly for 2024). Only include itemized deductions here if they exceed your standard deduction. This calculator applies the standard deduction automatically and uses your entered deductions to reduce AGI.
+                </div>
+                
+                <button type="button" onclick="toggleDeductionsHelp()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-size: 0.875rem;">Close</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="taxYear">Tax Year *</label>
+              <div class="custom-select-wrapper">
+                <select id="taxYear" required>
+                  <option value="2026" selected>2026 (Projected)</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                  <option value="2023">2023</option>
+                  <option value="2022">2022</option>
+                </select>
+                <span class="custom-arrow"></span>
+              </div>
+              <small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.875rem;">Select the tax year for calculations</small>
+            </div>
+            <div class="form-group">
+              <label for="filingStatus">Filing Status *</label>
+              <div class="custom-select-wrapper">
+                <select id="filingStatus" required>
+                  <option value="">Select...</option>
+                  <option value="single">Single</option>
+                  <option value="married-joint">Married Filing Jointly</option>
+                  <option value="married-separate">Married Filing Separately</option>
+                  <option value="head-of-household">Head of Household</option>
+                </select>
+                <span class="custom-arrow"></span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="state">State</label>
+              <select id="state">
+                <option value="">Select state (optional)</option>
+                <option value="AL">Alabama</option>
+                <option value="AK">Alaska</option>
+                <option value="AZ">Arizona</option>
+                <option value="AR">Arkansas</option>
+                <option value="CA">California</option>
+                <option value="CO">Colorado</option>
+                <option value="CT">Connecticut</option>
+                <option value="DE">Delaware</option>
+                <option value="FL">Florida</option>
+                <option value="GA">Georgia</option>
+                <option value="HI">Hawaii</option>
+                <option value="ID">Idaho</option>
+                <option value="IL">Illinois</option>
+                <option value="IN">Indiana</option>
+                <option value="IA">Iowa</option>
+                <option value="KS">Kansas</option>
+                <option value="KY">Kentucky</option>
+                <option value="LA">Louisiana</option>
+                <option value="ME">Maine</option>
+                <option value="MD">Maryland</option>
+                <option value="MA">Massachusetts</option>
+                <option value="MI">Michigan</option>
+                <option value="MN">Minnesota</option>
+                <option value="MS">Mississippi</option>
+                <option value="MO">Missouri</option>
+                <option value="MT">Montana</option>
+                <option value="NE">Nebraska</option>
+                <option value="NV">Nevada</option>
+                <option value="NH">New Hampshire</option>
+                <option value="NJ">New Jersey</option>
+                <option value="NM">New Mexico</option>
+                <option value="NY">New York</option>
+                <option value="NC">North Carolina</option>
+                <option value="ND">North Dakota</option>
+                <option value="OH">Ohio</option>
+                <option value="OK">Oklahoma</option>
+                <option value="OR">Oregon</option>
+                <option value="PA">Pennsylvania</option>
+                <option value="RI">Rhode Island</option>
+                <option value="SC">South Carolina</option>
+                <option value="SD">South Dakota</option>
+                <option value="TN">Tennessee</option>
+                <option value="TX">Texas</option>
+                <option value="UT">Utah</option>
+                <option value="VT">Vermont</option>
+                <option value="VA">Virginia</option>
+                <option value="WA">Washington</option>
+                <option value="WV">West Virginia</option>
+                <option value="WI">Wisconsin</option>
+                <option value="WY">Wyoming</option>
+                <option value="DC">District of Columbia</option>
+              </select>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Calculate Tax Estimate</button>
+        </form>
+      </div>
+      
+      <div id="resultsSection" style="display: none;" class="results-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <h2 style="color: #1e293b; font-size: 1.5rem; margin: 0;">Tax Calculation Results</h2>
+          <button onclick="printTaxResults()" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.2rem;">🖨️</span>
+            <span>Print / Save as PDF</span>
+          </button>
+        </div>
+        <!-- W-2 Results -->
+        <div id="w2ResultsCard" class="results-card" style="display: none; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); margin-bottom: 1.5rem;">
+          <h3>W-2 Employee Tax Estimate</h3>
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="result-label">Gross Income</div>
+              <div class="result-value" id="w2GrossIncome">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">FICA Taxes (7.65%)</div>
+              <div class="result-value" id="w2FicaTax">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Federal Income Tax</div>
+              <div class="result-value" id="w2FederalTax">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">State Income Tax</div>
+              <div class="result-value" id="w2StateTax">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Annual Tax</div>
+              <div class="result-value" id="w2TotalTax">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Take-Home Pay</div>
+              <div class="result-value" id="w2TakeHome">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Estimated Monthly Withholding</div>
+              <div class="result-value" id="w2MonthlyWithholding">$0</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 1099 Results -->
+        <div id="1099ResultsCard" class="results-card" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin-bottom: 1.5rem;">
+          <h3>1099 Self-Employed Tax Estimate</h3>
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="result-label">Adjusted Gross Income</div>
+              <div class="result-value" id="adjustedIncome">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Self-Employment Tax</div>
+              <div class="result-value" id="selfEmploymentTax">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Federal Income Tax</div>
+              <div class="result-value" id="federalTax">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">State Income Tax</div>
+              <div class="result-value" id="stateTax1099">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Annual Tax</div>
+              <div class="result-value" id="totalTax">$0</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Combined Results (if both selected) -->
+        <div id="combinedResultsCard" class="results-card" style="display: none; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); margin-bottom: 1.5rem;">
+          <h3>Combined Tax Estimate</h3>
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="result-label">Total Gross Income</div>
+              <div class="result-value" id="combinedGrossIncome">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Annual Tax</div>
+              <div class="result-value" id="combinedAnnualTax">$0</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Take-Home Pay (Annual)</div>
+              <div class="result-value" id="combinedTakeHome">$0</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Quarterly Payments (only for 1099) -->
+        <div id="quarterlySection" class="quarterly-breakdown" style="display: none;">
+          <h4>Quarterly Estimated Payments (1099 Only)</h4>
+          <div class="quarterly-item">
+            <span class="quarter-label">Q1 (Jan-Mar)</span>
+            <span class="quarter-value" id="quarter1">$0</span>
+          </div>
+          <div class="quarterly-item">
+            <span class="quarter-label">Q2 (Apr-Jun)</span>
+            <span class="quarter-value" id="quarter2">$0</span>
+          </div>
+          <div class="quarterly-item">
+            <span class="quarter-label">Q3 (Jul-Sep)</span>
+            <span class="quarter-value" id="quarter3">$0</span>
+          </div>
+          <div class="quarterly-item">
+            <span class="quarter-label">Q4 (Oct-Dec)</span>
+            <span class="quarter-value" id="quarter4">$0</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <h3>Tax Information</h3>
+        <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: #1e293b;">W-2 Employee Taxes:</h4>
+        <ul>
+          <li><strong>FICA Taxes:</strong> 7.65% (Social Security 6.2% + Medicare 1.45%) - automatically withheld from paycheck</li>
+          <li><strong>Federal Income Tax:</strong> Progressive tax brackets based on taxable income after standard deduction</li>
+          <li><strong>Withholding:</strong> Employers automatically withhold taxes from each paycheck</li>
+        </ul>
+        <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: #1e293b;">1099 Self-Employed Taxes:</h4>
+        <ul>
+          <li><strong>Self-Employment Tax:</strong> 15.3% on net earnings (Social Security 12.4% + Medicare 2.9%)</li>
+          <li><strong>Quarterly Payments:</strong> Due April 15, June 15, September 15, and January 15</li>
+          <li><strong>Deductions:</strong> Business expenses reduce your taxable income</li>
+          <li><strong>Standard Deduction:</strong> Varies by filing status (separate calculation for income tax)</li>
+        </ul>
+        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem;"><strong>Note:</strong> This is an estimation tool. Tax rates and brackets change annually. Always consult with a tax professional for accurate tax planning and filing.</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Tax data by year (IRS data)
+    const TAX_DATA = {
+      2022: {
+        socialSecurityWageBase: 147000,
+        standardDeductions: {
+          'single': 12950,
+          'married-joint': 25900,
+          'married-separate': 12950,
+          'head-of-household': 19400
+        },
+        federalBrackets: {
+          single: [
+            [0, 0.10, 10275],
+            [10275, 0.12, 41775],
+            [41775, 0.22, 89450],
+            [89450, 0.24, 190750],
+            [190750, 0.32, 364200],
+            [364200, 0.35, 462500],
+            [462500, 0.37, Infinity]
+          ]
+        }
+      },
+      2023: {
+        socialSecurityWageBase: 160200,
+        standardDeductions: {
+          'single': 13850,
+          'married-joint': 27700,
+          'married-separate': 13850,
+          'head-of-household': 20800
+        },
+        federalBrackets: {
+          single: [
+            [0, 0.10, 11000],
+            [11000, 0.12, 44725],
+            [44725, 0.22, 95375],
+            [95375, 0.24, 190750],
+            [190750, 0.32, 364200],
+            [364200, 0.35, 462500],
+            [462500, 0.37, Infinity]
+          ]
+        }
+      },
+      2024: {
+        socialSecurityWageBase: 160200,
+        standardDeductions: {
+          'single': 14600,
+          'married-joint': 29200,
+          'married-separate': 14600,
+          'head-of-household': 21900
+        },
+        federalBrackets: {
+          single: [
+            [0, 0.10, 11600],
+            [11600, 0.12, 47150],
+            [47150, 0.22, 100525],
+            [100525, 0.24, 191950],
+            [191950, 0.32, 243725],
+            [243725, 0.35, 609350],
+            [609350, 0.37, Infinity]
+          ],
+          'married-joint': [
+            [0, 0.10, 23200],
+            [23200, 0.12, 94300],
+            [94300, 0.22, 201050],
+            [201050, 0.24, 383900],
+            [383900, 0.32, 487450],
+            [487450, 0.35, 731200],
+            [731200, 0.37, Infinity]
+          ],
+          'married-separate': [
+            [0, 0.10, 11600],
+            [11600, 0.12, 47150],
+            [47150, 0.22, 100525],
+            [100525, 0.24, 191950],
+            [191950, 0.32, 243725],
+            [243725, 0.35, 365600],
+            [365600, 0.37, Infinity]
+          ],
+          'head-of-household': [
+            [0, 0.10, 16550],
+            [16550, 0.12, 63100],
+            [63100, 0.22, 100500],
+            [100500, 0.24, 191950],
+            [191950, 0.32, 243700],
+            [243700, 0.35, 609350],
+            [609350, 0.37, Infinity]
+          ]
+        }
+      },
+      2025: { // 2025 IRS Official Data
+        socialSecurityWageBase: 168600, // 2025 Social Security wage base
+        standardDeductions: {
+          'single': 15750,
+          'married-joint': 31500,
+          'married-separate': 15750,
+          'head-of-household': 23625
+        },
+        federalBrackets: {
+          single: [
+            [0, 0.10, 11925],
+            [11925, 0.12, 48475],
+            [48475, 0.22, 103350],
+            [103350, 0.24, 197300],
+            [197300, 0.32, 250525],
+            [250525, 0.35, 626350],
+            [626350, 0.37, Infinity]
+          ],
+          'married-joint': [
+            [0, 0.10, 23850],
+            [23850, 0.12, 96950],
+            [96950, 0.22, 206700],
+            [206700, 0.24, 394600],
+            [394600, 0.32, 501050],
+            [501050, 0.35, 751600],
+            [751600, 0.37, Infinity]
+          ],
+          'married-separate': [
+            [0, 0.10, 11925],
+            [11925, 0.12, 48475],
+            [48475, 0.22, 103350],
+            [103350, 0.24, 197300],
+            [197300, 0.32, 250525],
+            [250525, 0.35, 375800],
+            [375800, 0.37, Infinity]
+          ],
+          'head-of-household': [
+            [0, 0.10, 17000],
+            [17000, 0.12, 64850],
+            [64850, 0.22, 103350],
+            [103350, 0.24, 197300],
+            [197300, 0.32, 250500],
+            [250500, 0.35, 626350],
+            [626350, 0.37, Infinity]
+          ]
+        }
+      },
+      2026: { // Projected - using 2025 values with estimated inflation adjustments
+        socialSecurityWageBase: 177000, // Estimated
+        standardDeductions: {
+          'single': 16500, // Estimated
+          'married-joint': 33000, // Estimated
+          'married-separate': 16500, // Estimated
+          'head-of-household': 24800 // Estimated
+        },
+        federalBrackets: {
+          single: [
+            [0, 0.10, 12500], // Estimated
+            [12500, 0.12, 51000], // Estimated
+            [51000, 0.22, 108500], // Estimated
+            [108500, 0.24, 207000], // Estimated
+            [207000, 0.32, 263000], // Estimated
+            [263000, 0.35, 658000], // Estimated
+            [658000, 0.37, Infinity]
+          ],
+          'married-joint': [
+            [0, 0.10, 25000], // Estimated
+            [25000, 0.12, 102000], // Estimated
+            [102000, 0.22, 217000], // Estimated
+            [217000, 0.24, 415000], // Estimated
+            [415000, 0.32, 526000], // Estimated
+            [526000, 0.35, 790000], // Estimated
+            [790000, 0.37, Infinity]
+          ],
+          'married-separate': [
+            [0, 0.10, 12500], // Estimated
+            [12500, 0.12, 51000], // Estimated
+            [51000, 0.22, 108500], // Estimated
+            [108500, 0.24, 207000], // Estimated
+            [207000, 0.32, 263000], // Estimated
+            [263000, 0.35, 395000], // Estimated
+            [395000, 0.37, Infinity]
+          ],
+          'head-of-household': [
+            [0, 0.10, 18000], // Estimated
+            [18000, 0.12, 68000], // Estimated
+            [68000, 0.22, 109000], // Estimated
+            [109000, 0.24, 207000], // Estimated
+            [207000, 0.32, 264000], // Estimated
+            [264000, 0.35, 658000], // Estimated
+            [658000, 0.37, Infinity]
+          ]
+        }
+      }
+    };
+    
+    function toggleIncomeType() {
+      const incomeType = document.getElementById('incomeType').value;
+      const w2Group = document.getElementById('w2IncomeGroup');
+      const w2Input = document.getElementById('w2Income');
+      const w2Label = w2Group.querySelector('label');
+      const w2Small = w2Group.querySelector('small');
+      
+      const income1099Group = document.getElementById('1099IncomeGroup');
+      const income1099Input = document.getElementById('grossIncome');
+      const income1099Label = income1099Group.querySelector('label');
+      const income1099Small = income1099Group.querySelector('small');
+      
+      if (incomeType === 'w2') {
+        w2Group.style.display = 'block';
+        w2Input.required = true;
+        income1099Group.style.display = 'none';
+        income1099Input.required = false;
+        income1099Input.value = '0';
+      } else if (incomeType === '1099') {
+        w2Group.style.display = 'none';
+        w2Input.required = false;
+        w2Input.value = '0';
+        income1099Group.style.display = 'block';
+        income1099Input.required = true;
+      } else if (incomeType === 'both') {
+        w2Group.style.display = 'block';
+        w2Input.required = true;
+        income1099Group.style.display = 'block';
+        income1099Input.required = true;
+      } else {
+        w2Group.style.display = 'none';
+        w2Input.required = false;
+        w2Input.value = '0';
+        income1099Group.style.display = 'none';
+        income1099Input.required = false;
+        income1099Input.value = '0';
+      }
+    }
+    
+    function calculateTax(event) {
+      event.preventDefault();
+      
+      const incomeType = document.getElementById('incomeType').value;
+      const w2Income = parseFloat(document.getElementById('w2Income').value || 0);
+      const grossIncome = parseFloat(document.getElementById('grossIncome').value || 0);
+      const deductions = parseFloat(document.getElementById('deductions').value || 0);
+      const filingStatus = document.getElementById('filingStatus').value;
+      const state = document.getElementById('state').value;
+      const taxYear = parseInt(document.getElementById('taxYear').value || 2026);
+      
+      if (!incomeType || !filingStatus) {
+        showError('Please select income type and filing status.');
+        return;
+      }
+      
+      if ((incomeType === 'w2' || incomeType === 'both') && (!w2Income || w2Income < 0)) {
+        showError('Please enter valid W-2 income.');
+        return;
+      }
+      
+      if ((incomeType === '1099' || incomeType === 'both') && (!grossIncome || grossIncome < 0)) {
+        showError('Please enter valid 1099 income.');
+        return;
+      }
+      
+      if (deductions < 0) {
+        showError('Deductions cannot be negative.');
+        return;
+      }
+      
+      // Hide all results initially
+      document.getElementById('w2ResultsCard').style.display = 'none';
+      document.getElementById('1099ResultsCard').style.display = 'none';
+      document.getElementById('combinedResultsCard').style.display = 'none';
+      document.getElementById('quarterlySection').style.display = 'none';
+      
+      let totalFederalTax = 0;
+      let combinedGross = 0;
+      
+      let w2Tax = null;
+      let tax1099 = null;
+      
+      // Calculate W-2 taxes if applicable
+      if (incomeType === 'w2' || incomeType === 'both') {
+        w2Tax = calculateW2Tax(w2Income, filingStatus, state, taxYear);
+        totalFederalTax += w2Tax.totalTax;
+        combinedGross += w2Income;
+        displayW2Results(w2Tax);
+        document.getElementById('w2ResultsCard').style.display = 'block';
+      }
+      
+      // Calculate 1099 taxes if applicable
+      if (incomeType === '1099' || incomeType === 'both') {
+        tax1099 = calculate1099Tax(grossIncome, deductions, filingStatus, state, taxYear);
+        totalFederalTax += tax1099.totalTax;
+        combinedGross += grossIncome - deductions;
+        display1099Results(tax1099);
+        document.getElementById('1099ResultsCard').style.display = 'block';
+        document.getElementById('quarterlySection').style.display = 'block';
+      }
+      
+      // Show combined results if both
+      if (incomeType === 'both') {
+        const combinedTakeHome = combinedGross - totalFederalTax;
+        displayCombinedResults(combinedGross, totalFederalTax, combinedTakeHome);
+        document.getElementById('combinedResultsCard').style.display = 'block';
+      }
+      
+      document.getElementById('resultsSection').style.display = 'block';
+      document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    function calculateW2Tax(w2Income, filingStatus, state, taxYear) {
+      const yearData = TAX_DATA[taxYear] || TAX_DATA[2026]; // Default to 2026 if year not found
+      
+      // FICA taxes (automatically withheld from paycheck)
+      const socialSecurityWageBase = yearData.socialSecurityWageBase;
+      const socialSecurityTaxable = Math.min(w2Income, socialSecurityWageBase);
+      const socialSecurityTax = socialSecurityTaxable * 0.062; // 6.2% for Social Security
+      const medicareTax = w2Income * 0.0145; // 1.45% for Medicare
+      const ficaTax = socialSecurityTax + medicareTax;
+      
+      // Federal Income Tax (progressive brackets)
+      const standardDeductions = yearData.standardDeductions;
+      const standardDeduction = standardDeductions[filingStatus] || standardDeductions['single'];
+      const taxableIncome = Math.max(0, w2Income - standardDeduction);
+      
+      const federalTax = calculateFederalIncomeTax(taxableIncome, filingStatus, taxYear);
+      
+      // State Income Tax
+      const stateTax = calculateStateTax(taxableIncome, filingStatus, state, taxYear);
+      
+      const totalTax = ficaTax + federalTax + stateTax;
+      const takeHome = w2Income - totalTax;
+      const monthlyWithholding = totalTax / 12;
+      
+      return {
+        grossIncome: w2Income,
+        ficaTax: ficaTax,
+        federalTax: federalTax,
+        stateTax: stateTax,
+        totalTax: totalTax,
+        takeHome: takeHome,
+        monthlyWithholding: monthlyWithholding
+      };
+    }
+    
+    function calculate1099Tax(grossIncome, deductions, filingStatus, state, taxYear) {
+      const yearData = TAX_DATA[taxYear] || TAX_DATA[2026]; // Default to 2026 if year not found
+      
+      // Calculate Adjusted Gross Income (AGI)
+      const adjustedIncome = Math.max(0, grossIncome - deductions);
+      
+      // Self-Employment Tax: 15.3% on net earnings (applies to income up to Social Security wage base)
+      const socialSecurityWageBase = yearData.socialSecurityWageBase;
+      const netEarnings = adjustedIncome * 0.9235; // 92.35% of net earnings subject to SE tax
+      const socialSecurityTaxable = Math.min(netEarnings, socialSecurityWageBase);
+      const medicareTaxable = netEarnings; // No cap on Medicare
+      
+      const socialSecurityTax = socialSecurityTaxable * 0.124; // 12.4% for Social Security
+      const medicareTax = medicareTaxable * 0.029; // 2.9% for Medicare
+      const selfEmploymentTax = socialSecurityTax + medicareTax;
+      
+      // Deduct half of SE tax for income tax calculation
+      const incomeForFederalTax = adjustedIncome - (selfEmploymentTax / 2);
+      
+      const standardDeductions = yearData.standardDeductions;
+      const standardDeduction = standardDeductions[filingStatus] || standardDeductions['single'];
+      const taxableIncome = Math.max(0, incomeForFederalTax - standardDeduction);
+      
+      const federalTax = calculateFederalIncomeTax(taxableIncome, filingStatus, taxYear);
+      
+      // State Income Tax
+      const stateTax = calculateStateTax(taxableIncome, filingStatus, state, taxYear);
+      
+      const totalTax = selfEmploymentTax + federalTax + stateTax;
+      const quarterlyPayment = totalTax / 4;
+      
+      return {
+        adjustedIncome: adjustedIncome,
+        selfEmploymentTax: selfEmploymentTax,
+        federalTax: federalTax,
+        stateTax: stateTax,
+        totalTax: totalTax,
+        quarterlyPayment: quarterlyPayment
+      };
+    }
+    
+    function calculateFederalIncomeTax(taxableIncome, filingStatus, taxYear) {
+      const yearData = TAX_DATA[taxYear] || TAX_DATA[2026]; // Default to 2026 if year not found
+      
+      // Use the correct brackets for the filing status
+      let brackets = yearData.federalBrackets[filingStatus];
+      
+      // Fallback to single if brackets for this status don't exist
+      if (!brackets) {
+        brackets = yearData.federalBrackets.single || yearData.federalBrackets['married-joint'];
+      }
+      
+      let federalTax = 0;
+      
+      if (taxableIncome <= 0) {
+        return 0;
+      }
+      
+      // Calculate tax using progressive brackets
+      for (let i = 0; i < brackets.length; i++) {
+        const [lowerBound, rate, upperBound] = brackets[i];
+        
+        if (taxableIncome > lowerBound) {
+          const incomeInBracket = Math.min(taxableIncome, upperBound) - lowerBound;
+          if (incomeInBracket > 0) {
+            federalTax += incomeInBracket * rate;
+          }
+        } else {
+          break; // Stop if we've passed the income level
+        }
+      }
+      
+      return federalTax;
+    }
+    
+    function calculateStateTax(taxableIncome, filingStatus, state, taxYear) {
+      if (!state || state === '') {
+        return 0; // No state selected
+      }
+      
+      // States with no income tax
+      const noTaxStates = ['FL', 'TX', 'NV', 'SD', 'WA', 'WY', 'NH', 'TN'];
+      if (noTaxStates.includes(state)) {
+        // NH and TN tax dividends and interest only, not general income
+        if (state === 'NH' || state === 'TN') {
+          return 0; // Simplified: treating as no tax for general income
+        }
+        return 0;
+      }
+      
+      // State tax rates and brackets (2024) - Simplified calculations using flat or progressive brackets
+      // This is a simplified version - actual state taxes can be more complex
+      
+      const stateTaxRates = {
+        'AL': { flat: 0.05, brackets: null }, // Alabama: 2%-5% (using 5% as approximation)
+        'AK': { flat: 0, brackets: null }, // No state income tax
+        'AZ': { flat: 0.025, brackets: null }, // Arizona: 2.5% flat
+        'AR': { flat: 0.055, brackets: null }, // Arkansas: 0.9%-5.5% (using 5.5% as approximation)
+        'CA': { brackets: { // California: Progressive brackets (simplified)
+          single: [[0, 0.01], [9327, 0.02], [22107, 0.04], [34892, 0.06], [48435, 0.08], [61214, 0.093], [312686, 0.103], [375221, 0.113], [625369, 0.123], [1000000, 0.133]]
+        }},
+        'CO': { flat: 0.044, brackets: null }, // Colorado: 4.40% flat (2025)
+        'CT': { brackets: { // Connecticut: Progressive (simplified)
+          single: [[0, 0.03], [10000, 0.05], [50000, 0.055], [100000, 0.06], [200000, 0.065], [250000, 0.069], [500000, 0.0699]]
+        }},
+        'DE': { brackets: { // Delaware: Progressive (simplified)
+          single: [[0, 0.0], [2000, 0.022], [5000, 0.039], [10000, 0.048], [20000, 0.052], [25000, 0.0555], [60000, 0.066]]
+        }},
+        'GA': { flat: 0.055, brackets: null }, // Georgia: 1%-5.75% (using 5.5% as approximation)
+        'HI': { brackets: { // Hawaii: Progressive (simplified)
+          single: [[0, 0.014], [2400, 0.032], [4800, 0.055], [9600, 0.064], [14400, 0.068], [19200, 0.072], [24000, 0.076], [36000, 0.079], [48000, 0.0825], [150000, 0.09], [175000, 0.10], [200000, 0.11]]
+        }},
+        'ID': { flat: 0.058, brackets: null }, // Idaho: 5.8% flat (2025)
+        'IL': { flat: 0.0495, brackets: null }, // Illinois: 4.95% flat
+        'IN': { flat: 0.03, brackets: null }, // Indiana: 3.0% flat (2025)
+        'IA': { flat: 0.038, brackets: null }, // Iowa: 3.8% flat (2025)
+        'KS': { brackets: { // Kansas: Progressive (simplified)
+          single: [[0, 0.031], [15000, 0.0525], [30000, 0.057]]
+        }},
+        'KY': { flat: 0.05, brackets: null }, // Kentucky: 5% flat
+        'LA': { flat: 0.03, brackets: null }, // Louisiana: 3.0% flat (2025 - changed from progressive)
+        'ME': { brackets: { // Maine: Progressive (simplified)
+          single: [[0, 0.058], [24500, 0.0675], [58050, 0.0715]]
+        }},
+        'MD': { brackets: { // Maryland: Progressive (2025)
+          single: [
+            [0, 0.02],     // 2% on first $1,000
+            [1000, 0.03],  // 3% on $1,000 - $2,000
+            [2000, 0.04],  // 4% on $2,000 - $3,000
+            [3000, 0.0475], // 4.75% on $3,000 - $100,000
+            [100000, 0.05], // 5% on $100,000 - $125,000
+            [125000, 0.0525], // 5.25% on $125,000 - $150,000
+            [150000, 0.05],   // 5% on $150,000 - $250,000
+            [250000, 0.0575]  // 5.75% above $250,000
+          ]
+        }},
+        'MA': { flat: 0.05, brackets: null }, // Massachusetts: 5% flat
+        'MI': { flat: 0.0425, brackets: null }, // Michigan: 4.25% flat
+        'MN': { brackets: { // Minnesota: Progressive (simplified)
+          single: [[0, 0.0535], [30130, 0.068], [98760, 0.0785], [183340, 0.0985]]
+        }},
+        'MS': { flat: 0.044, brackets: null }, // Mississippi: 4.4% flat (2025)
+        'MO': { brackets: { // Missouri: Progressive (simplified)
+          single: [[0, 0.015], [1121, 0.02], [2242, 0.025], [3363, 0.03], [4484, 0.035], [5605, 0.04], [6726, 0.045], [7847, 0.05], [8968, 0.054]]
+        }},
+        'MT': { brackets: { // Montana: Progressive (simplified)
+          single: [[0, 0.01], [3100, 0.02], [5200, 0.03], [8000, 0.04], [10800, 0.05], [13900, 0.06], [17900, 0.0675], [22900, 0.069]]
+        }},
+        'NE': { brackets: { // Nebraska: Progressive (simplified)
+          single: [[0, 0.0246], [3600, 0.0351], [21600, 0.0501], [31100, 0.0684]]
+        }},
+        'NV': { flat: 0, brackets: null }, // No state income tax
+        'NH': { flat: 0, brackets: null }, // Only taxes dividends/interest (treating as 0 for general income)
+        'NJ': { brackets: { // New Jersey: Progressive (simplified)
+          single: [[0, 0.014], [20000, 0.0175], [35000, 0.035], [40000, 0.05525], [75000, 0.0637], [500000, 0.0897], [1000000, 0.1075]]
+        }},
+        'NM': { brackets: { // New Mexico: Progressive (simplified)
+          single: [[0, 0.017], [5500, 0.032], [11000, 0.047], [16000, 0.049], [210000, 0.059]]
+        }},
+        'NY': { brackets: { // New York: Progressive (simplified)
+          single: [[0, 0.04], [8500, 0.045], [11700, 0.0525], [13900, 0.055], [80650, 0.06], [215400, 0.0685], [1077550, 0.0965], [5000000, 0.103], [25000000, 0.109]]
+        }},
+        'NC': { flat: 0.0425, brackets: null }, // North Carolina: 4.25% flat (2025)
+        'ND': { brackets: { // North Dakota: Progressive (simplified)
+          single: [[0, 0.011], [41375, 0.0204], [101050, 0.0227], [210825, 0.0299], [458350, 0.0299]]
+        }},
+        'OH': { brackets: { // Ohio: Progressive (simplified)
+          single: [[0, 0], [26050, 0.025], [41700, 0.035], [83350, 0.0375], [104250, 0.0399], [208500, 0.045]]
+        }},
+        'OK': { brackets: { // Oklahoma: Progressive (simplified)
+          single: [[0, 0.0025], [1000, 0.0075], [2500, 0.0175], [3750, 0.0275], [4900, 0.0375], [7200, 0.0475]]
+        }},
+        'OR': { brackets: { // Oregon: Progressive (simplified)
+          single: [[0, 0.0475], [3950, 0.0675], [9900, 0.0875], [125000, 0.099]]
+        }},
+        'PA': { flat: 0.0307, brackets: null }, // Pennsylvania: 3.07% flat
+        'RI': { brackets: { // Rhode Island: Progressive (simplified)
+          single: [[0, 0.0375], [68200, 0.0475], [155050, 0.0599]]
+        }},
+        'SC': { brackets: { // South Carolina: Progressive brackets (2025) - Top rate reduced to 6.0%
+          single: [
+            [0, 0.0],      // 0% on first $3,460
+            [3460, 0.03],  // 3% on $3,460 - $17,330
+            [17330, 0.06]  // 6.0% above $17,330 (2025 top rate)
+          ],
+          'married-joint': [
+            [0, 0.0],      // 0% on first $3,460
+            [3460, 0.03],  // 3% on $3,460 - $17,330
+            [17330, 0.06]  // 6.0% above $17,330 (2025 top rate)
+          ],
+          'married-separate': [
+            [0, 0.0],      // 0% on first $3,460
+            [3460, 0.03],  // 3% on $3,460 - $17,330
+            [17330, 0.06]  // 6.0% above $17,330 (2025 top rate)
+          ],
+          'head-of-household': [
+            [0, 0.0],      // 0% on first $3,460
+            [3460, 0.03],  // 3% on $3,460 - $17,330
+            [17330, 0.06]  // 6.0% above $17,330 (2025 top rate)
+          ]
+        }},
+        'SD': { flat: 0, brackets: null }, // No state income tax
+        'TN': { flat: 0, brackets: null }, // Only taxes dividends/interest (treating as 0 for general income)
+        'UT': { flat: 0.0485, brackets: null }, // Utah: 4.85% flat
+        'VT': { brackets: { // Vermont: Progressive (simplified)
+          single: [[0, 0.0335], [42350, 0.066], [102200, 0.076], [213150, 0.0875]]
+        }},
+        'VA': { brackets: { // Virginia: Progressive (simplified)
+          single: [[0, 0.02], [3000, 0.03], [5000, 0.05], [17000, 0.0575]]
+        }},
+        'WA': { flat: 0, brackets: null }, // No state income tax
+        'WV': { brackets: { // West Virginia: Progressive (simplified)
+          single: [[0, 0.03], [10000, 0.04], [25000, 0.045], [40000, 0.06], [60000, 0.065]]
+        }},
+        'WI': { brackets: { // Wisconsin: Progressive (simplified)
+          single: [[0, 0.0354], [12810, 0.0465], [25620, 0.0627], [280950, 0.0765]]
+        }},
+        'WY': { flat: 0, brackets: null }, // No state income tax
+        'DC': { brackets: { // District of Columbia: Progressive (simplified)
+          single: [[0, 0.04], [10000, 0.06], [40000, 0.065], [60000, 0.085], [350000, 0.0875], [1000000, 0.095]]
+        }}
+      };
+      
+      const stateInfo = stateTaxRates[state];
+      if (!stateInfo) {
+        return 0; // Unknown state
+      }
+      
+      // If flat rate
+      if (stateInfo.flat !== undefined && stateInfo.flat !== null) {
+        return taxableIncome * stateInfo.flat;
+      }
+      
+      // If progressive brackets - use filing-status-specific brackets if available
+      if (stateInfo.brackets) {
+        // Try to use brackets specific to filing status
+        let brackets = stateInfo.brackets[filingStatus] || stateInfo.brackets['married-joint'] || stateInfo.brackets.single;
+        
+        // Fallback to single if status-specific brackets don't exist
+        if (!brackets && stateInfo.brackets.single) {
+          brackets = stateInfo.brackets.single;
+        }
+        
+        if (brackets) {
+          let stateTax = 0;
+          
+          // Calculate tax using progressive brackets
+          for (let i = 0; i < brackets.length; i++) {
+            const [threshold, rate] = brackets[i];
+            const nextThreshold = i < brackets.length - 1 ? brackets[i + 1][0] : Infinity;
+            
+            if (taxableIncome > threshold) {
+              // Calculate income in this bracket
+              const incomeInBracket = Math.min(taxableIncome, nextThreshold) - threshold;
+              if (incomeInBracket > 0) {
+                stateTax += incomeInBracket * rate;
+              }
+            } else {
+              break; // Stop if we've passed the income level
+            }
+          }
+          
+          return stateTax;
+        }
+      }
+      
+      return 0;
+    }
+    
+    function displayW2Results(w2Tax) {
+      document.getElementById('w2GrossIncome').textContent = formatCurrency(w2Tax.grossIncome);
+      document.getElementById('w2FicaTax').textContent = formatCurrency(w2Tax.ficaTax);
+      document.getElementById('w2FederalTax').textContent = formatCurrency(w2Tax.federalTax);
+      document.getElementById('w2StateTax').textContent = formatCurrency(w2Tax.stateTax || 0);
+      document.getElementById('w2TotalTax').textContent = formatCurrency(w2Tax.totalTax);
+      document.getElementById('w2TakeHome').textContent = formatCurrency(w2Tax.takeHome);
+      document.getElementById('w2MonthlyWithholding').textContent = formatCurrency(w2Tax.monthlyWithholding);
+    }
+    
+    function display1099Results(tax1099) {
+      document.getElementById('adjustedIncome').textContent = formatCurrency(tax1099.adjustedIncome);
+      document.getElementById('selfEmploymentTax').textContent = formatCurrency(tax1099.selfEmploymentTax);
+      document.getElementById('federalTax').textContent = formatCurrency(tax1099.federalTax);
+      document.getElementById('stateTax1099').textContent = formatCurrency(tax1099.stateTax || 0);
+      document.getElementById('totalTax').textContent = formatCurrency(tax1099.totalTax);
+      
+      document.getElementById('quarter1').textContent = formatCurrency(tax1099.quarterlyPayment);
+      document.getElementById('quarter2').textContent = formatCurrency(tax1099.quarterlyPayment);
+      document.getElementById('quarter3').textContent = formatCurrency(tax1099.quarterlyPayment);
+      document.getElementById('quarter4').textContent = formatCurrency(tax1099.quarterlyPayment);
+    }
+    
+    function displayCombinedResults(combinedGross, totalTax, combinedTakeHome) {
+      document.getElementById('combinedGrossIncome').textContent = formatCurrency(combinedGross);
+      document.getElementById('combinedAnnualTax').textContent = formatCurrency(totalTax);
+      document.getElementById('combinedTakeHome').textContent = formatCurrency(combinedTakeHome || (combinedGross - totalTax));
+    }
+    
+    function toggleDeductionsHelp() {
+      const helpDiv = document.getElementById('deductionsHelp');
+      if (helpDiv.style.display === 'none' || !helpDiv.style.display) {
+        helpDiv.style.display = 'block';
+      } else {
+        helpDiv.style.display = 'none';
+      }
+    }
+    
+    function printTaxResults() {
+      // Get current form values for print header
+      const taxYear = document.getElementById('taxYear').value || '2026';
+      const filingStatus = document.getElementById('filingStatus').value || 'Not Selected';
+      const state = document.getElementById('state').value || 'Not Selected';
+      const stateSelect = document.getElementById('state');
+      const stateName = state ? stateSelect.options[stateSelect.selectedIndex].text : 'Not Selected';
+      
+      const filingStatusLabels = {
+        'single': 'Single',
+        'married-joint': 'Married Filing Jointly',
+        'married-separate': 'Married Filing Separately',
+        'head-of-household': 'Head of Household'
+      };
+      
+      const filingStatusLabel = filingStatusLabels[filingStatus] || filingStatus;
+      const currentDate = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      
+      // Create print header
+      let printHeader = document.getElementById('printHeader');
+      if (!printHeader) {
+        printHeader = document.createElement('div');
+        printHeader.id = 'printHeader';
+        printHeader.className = 'print-header';
+        printHeader.style.display = 'none';
+        const resultsSection = document.getElementById('resultsSection');
+        resultsSection.insertBefore(printHeader, resultsSection.firstChild);
+      }
+      
+      printHeader.innerHTML = `
+        <h1>Tax Estimation Report</h1>
+        <div class="print-date">
+          <p><strong>Tax Year:</strong> ${taxYear} | <strong>Filing Status:</strong> ${filingStatusLabel} | <strong>State:</strong> ${stateName}</p>
+          <p><strong>Generated:</strong> ${currentDate}</p>
+        </div>
+      `;
+      
+      // Show print header temporarily for print
+      printHeader.style.display = 'block';
+      
+      // Trigger print dialog
+      window.print();
+      
+      // Hide print header after printing (with delay to ensure it prints)
+      setTimeout(() => {
+        printHeader.style.display = 'none';
+      }, 500);
+    }
+    
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', function() {
+      toggleIncomeType(); // Initialize form based on default selection
+    });
+    
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      }).format(amount || 0);
+    }
+    
+    function showError(message) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

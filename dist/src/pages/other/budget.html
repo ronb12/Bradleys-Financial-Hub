@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Budget Tracker | Bradley's Financial Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#007bff">
+  
+  <script src="/config.js"></script>
+  <script type="module" src="/firebase-config.js"></script>
+  <script src="/utils/validation.js"></script>
+  <script src="/utils/errorHandler.js"></script>
+  <script src="/utils/performance.js"></script>
+  <script src="/utils/themeManager.js"></script>
+  <script src="/utils/authHelper.js"></script>
+  <script src="/utils/dataService.js"></script>
+  <script type="module" src="/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; min-height: 100vh; }
+    .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; gap: 1rem; }
+    .page-title { display: flex; align-items: center; gap: 1rem; }
+    .page-title h1 { font-size: 2rem; font-weight: 700; color: #1e293b; }
+    .back-btn { background: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .back-btn:hover { background: #0056b3; }
+    .content-area { background: white; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-primary:hover { background: #0056b3; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-danger:hover { background: #c82333; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #5a6268; }
+    .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 0.75rem; }
+    .summary-card h3 { font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem; }
+    .summary-card .value { font-size: 2rem; font-weight: 700; }
+    .budgets-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .budgets-table th, .budgets-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    .budgets-table th { background: #f8fafc; font-weight: 600; color: #475569; }
+    .budgets-table tr:hover { background: #f8fafc; }
+    .progress-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 0.5rem; }
+    .progress-fill { height: 100%; background: #007bff; transition: width 0.3s; }
+    .progress-fill.over-budget { background: #dc3545; }
+    .progress-fill.warning { background: #ffc107; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #64748b; }
+    .empty-state h3 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #1e293b; }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+    .modal.active { display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: white; padding: 2rem; border-radius: 0.75rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-header h2 { font-size: 1.5rem; color: #1e293b; }
+    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; }
+    .close-btn:hover { color: #1e293b; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; }
+    .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+    .form-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; }
+    .error-message { background: #fee; color: #c33; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .success-message { background: #efe; color: #3c3; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .loading { text-align: center; padding: 2rem; color: #64748b; }
+    .budget-status { font-size: 0.875rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-weight: 600; }
+    .budget-status.under { background: #d4edda; color: #155724; }
+    .budget-status.over { background: #f8d7da; color: #721c24; }
+    .budget-status.on-track { background: #d1ecf1; color: #0c5460; }
+    @media (max-width: 768px) {
+      .budgets-table { font-size: 0.875rem; }
+      .budgets-table th, .budgets-table td { padding: 0.75rem 0.5rem; }
+      .summary-cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-title">
+        <span style="font-size: 2rem;">💰</span>
+        <h1>Budget Tracker</h1>
+      </div>
+      <a href="/index.html" class="back-btn">← Back to Home</a>
+    </div>
+    
+    <div class="content-area">
+      <div class="action-bar">
+        <h2 style="font-size: 1.5rem; color: #1e293b;">Your Budgets</h2>
+        <button class="btn btn-primary" onclick="openAddBudgetModal()">+ Add Budget</button>
+      </div>
+      
+      <div id="messageContainer"></div>
+      
+      <div id="summaryCards" class="summary-cards" style="display: none;">
+        <div class="summary-card">
+          <h3>Total Budgeted</h3>
+          <div class="value" id="totalBudgeted">$0</div>
+        </div>
+        <div class="summary-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <h3>Total Spent</h3>
+          <div class="value" id="totalSpent">$0</div>
+        </div>
+        <div class="summary-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <h3>Remaining</h3>
+          <div class="value" id="totalRemaining">$0</div>
+        </div>
+      </div>
+      
+      <div id="budgetsContainer">
+        <div class="loading">Loading budgets...</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add/Edit Budget Modal -->
+  <div id="budgetModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add Budget</h2>
+        <button class="close-btn" onclick="closeBudgetModal()">&times;</button>
+      </div>
+      <form id="budgetForm" onsubmit="saveBudget(event)">
+        <div class="form-group">
+          <label for="budgetCategory">Category *</label>
+          <select id="budgetCategory" name="category" required>
+            <option value="">Select a category</option>
+            <option value="Food & Dining">Food & Dining</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Housing">Housing</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Education">Education</option>
+            <option value="Personal Care">Personal Care</option>
+            <option value="Travel">Travel</option>
+            <option value="Insurance">Insurance</option>
+            <option value="Debt Payments">Debt Payments</option>
+            <option value="Savings">Savings</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="budgetAmount">Budgeted Amount *</label>
+          <input type="number" id="budgetAmount" name="budgetedAmount" required min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label for="budgetSpent">Spent Amount</label>
+          <input type="number" id="budgetSpent" name="spentAmount" min="0" step="0.01" placeholder="0.00" value="0">
+        </div>
+        <div class="form-group">
+          <label for="budgetMonth">Month *</label>
+          <input type="month" id="budgetMonth" name="month" required>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeBudgetModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Budget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <script>
+    let budgets = [];
+    let editingBudgetId = null;
+    
+    // Set default month to current month
+    document.addEventListener('DOMContentLoaded', function() {
+      const now = new Date();
+      const monthInput = document.getElementById('budgetMonth');
+      if (monthInput && !monthInput.value) {
+        monthInput.value = now.toISOString().slice(0, 7);
+      }
+    });
+    
+    // Wait for DataService and auth to be ready
+    async function init() {
+      try {
+        await waitForAuth(5000);
+        if (!window.DataService) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        if (window.DataService) {
+          loadBudgets();
+        } else {
+          showError('DataService not available. Please refresh the page.');
+        }
+      } catch (error) {
+        console.error('Initialization error:', error);
+        showError('Failed to initialize. Please refresh the page.');
+      }
+    }
+    
+    async function loadBudgets() {
+      try {
+        const container = document.getElementById('budgetsContainer');
+        container.innerHTML = '<div class="loading">Loading budgets...</div>';
+        
+        budgets = await window.DataService.getBudgets();
+        renderBudgets();
+        updateSummary();
+      } catch (error) {
+        console.error('Error loading budgets:', error);
+        showError('Failed to load budgets. ' + error.message);
+        document.getElementById('budgetsContainer').innerHTML = '<div class="empty-state"><h3>Error loading budgets</h3><p>Please try refreshing the page.</p></div>';
+      }
+    }
+    
+    function renderBudgets() {
+      const container = document.getElementById('budgetsContainer');
+      
+      if (budgets.length === 0) {
+        container.innerHTML = '<div class="empty-state"><h3>No Budgets Created</h3><p>Click "Add Budget" to start tracking your spending.</p></div>';
+        document.getElementById('summaryCards').style.display = 'none';
+        return;
+      }
+      
+      document.getElementById('summaryCards').style.display = 'grid';
+      
+      const table = `
+        <table class="budgets-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Budgeted</th>
+              <th>Spent</th>
+              <th>Remaining</th>
+              <th>Month</th>
+              <th>Progress</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${budgets.map(budget => {
+              const budgeted = budget.budgetedAmount || 0;
+              const spent = budget.spentAmount || 0;
+              const remaining = budgeted - spent;
+              const percentage = budgeted > 0 ? (spent / budgeted) * 100 : 0;
+              const statusClass = percentage > 100 ? 'over' : percentage > 80 ? 'warning' : 'under';
+              const statusText = percentage > 100 ? 'Over' : percentage > 80 ? 'Warning' : 'On Track';
+              const monthDate = budget.month && budget.month.toDate ? budget.month.toDate() : new Date(budget.month);
+              const monthStr = monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+              
+              return `
+                <tr>
+                  <td><strong>${escapeHtml(budget.category)}</strong></td>
+                  <td>${window.DataService.formatCurrency(budgeted)}</td>
+                  <td>${window.DataService.formatCurrency(spent)}</td>
+                  <td class="${remaining < 0 ? 'budget-status over' : 'budget-status under'}">${window.DataService.formatCurrency(remaining)}</td>
+                  <td>${monthStr}</td>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                      <div style="flex: 1;">
+                        <div class="progress-bar">
+                          <div class="progress-fill ${statusClass}" style="width: ${Math.min(percentage, 100)}%"></div>
+                        </div>
+                      </div>
+                      <span style="font-size: 0.875rem; color: #64748b;">${percentage.toFixed(0)}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <button class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;" onclick="editBudget('${budget.id}')">Edit</button>
+                    <button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem; margin-left: 0.5rem;" onclick="deleteBudget('${budget.id}')">Delete</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+      
+      container.innerHTML = table;
+    }
+    
+    function updateSummary() {
+      if (budgets.length === 0) return;
+      
+      const totalBudgeted = budgets.reduce((sum, budget) => sum + (budget.budgetedAmount || 0), 0);
+      const totalSpent = budgets.reduce((sum, budget) => sum + (budget.spentAmount || 0), 0);
+      const totalRemaining = totalBudgeted - totalSpent;
+      
+      document.getElementById('totalBudgeted').textContent = window.DataService.formatCurrency(totalBudgeted);
+      document.getElementById('totalSpent').textContent = window.DataService.formatCurrency(totalSpent);
+      document.getElementById('totalRemaining').textContent = window.DataService.formatCurrency(totalRemaining);
+    }
+    
+    function openAddBudgetModal() {
+      editingBudgetId = null;
+      document.getElementById('modalTitle').textContent = 'Add Budget';
+      document.getElementById('budgetForm').reset();
+      const now = new Date();
+      document.getElementById('budgetMonth').value = now.toISOString().slice(0, 7);
+      document.getElementById('budgetModal').classList.add('active');
+    }
+    
+    function editBudget(budgetId) {
+      const budget = budgets.find(b => b.id === budgetId);
+      if (!budget) return;
+      
+      editingBudgetId = budgetId;
+      document.getElementById('modalTitle').textContent = 'Edit Budget';
+      document.getElementById('budgetCategory').value = budget.category;
+      document.getElementById('budgetAmount').value = budget.budgetedAmount || 0;
+      document.getElementById('budgetSpent').value = budget.spentAmount || 0;
+      
+      // Handle month format
+      let monthValue;
+      if (budget.month && budget.month.toDate) {
+        const date = budget.month.toDate();
+        monthValue = date.toISOString().slice(0, 7);
+      } else if (budget.month) {
+        const date = new Date(budget.month);
+        monthValue = date.toISOString().slice(0, 7);
+      } else {
+        monthValue = new Date().toISOString().slice(0, 7);
+      }
+      document.getElementById('budgetMonth').value = monthValue;
+      
+      document.getElementById('budgetModal').classList.add('active');
+    }
+    
+    function closeBudgetModal() {
+      document.getElementById('budgetModal').classList.remove('active');
+      editingBudgetId = null;
+      document.getElementById('budgetForm').reset();
+    }
+    
+    async function saveBudget(event) {
+      event.preventDefault();
+      
+      const monthValue = document.getElementById('budgetMonth').value;
+      const monthDate = new Date(monthValue + '-01');
+      
+      const formData = {
+        category: document.getElementById('budgetCategory').value.trim(),
+        budgetedAmount: parseFloat(document.getElementById('budgetAmount').value),
+        spentAmount: parseFloat(document.getElementById('budgetSpent').value || 0),
+        month: monthDate
+      };
+      
+      if (!formData.category || formData.budgetedAmount < 0 || formData.spentAmount < 0) {
+        showError('Please fill in all required fields with valid values.');
+        return;
+      }
+      
+      try {
+        if (editingBudgetId) {
+          await window.DataService.updateBudget(editingBudgetId, formData);
+          showSuccess('Budget updated successfully!');
+        } else {
+          await window.DataService.addBudget(formData);
+          showSuccess('Budget added successfully!');
+        }
+        
+        closeBudgetModal();
+        await loadBudgets();
+      } catch (error) {
+        console.error('Error saving budget:', error);
+        showError('Failed to save budget. ' + error.message);
+      }
+    }
+    
+    async function deleteBudget(budgetId) {
+      if (!confirm('Are you sure you want to delete this budget?')) return;
+      
+      try {
+        await window.DataService.deleteBudget(budgetId);
+        showSuccess('Budget deleted successfully!');
+        await loadBudgets();
+      } catch (error) {
+        console.error('Error deleting budget:', error);
+        showError('Failed to delete budget. ' + error.message);
+      }
+    }
+    
+    function showError(message) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+    
+    function showSuccess(message) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div class="success-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => container.innerHTML = '', 3000);
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('budgetModal').addEventListener('click', function(e) {
+      if (e.target === this) closeBudgetModal();
+    });
+    
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

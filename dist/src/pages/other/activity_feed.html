@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Activity Feed | Bradley's Financial Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#007bff">
+  
+  <script src="/config.js"></script>
+  <script type="module" src="/firebase-config.js"></script>
+  <script src="/utils/validation.js"></script>
+  <script src="/utils/errorHandler.js"></script>
+  <script src="/utils/performance.js"></script>
+  <script src="/utils/themeManager.js"></script>
+  <script src="/utils/authHelper.js"></script>
+  <script src="/utils/dataService.js"></script>
+  <script type="module" src="/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; min-height: 100vh; }
+    .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; gap: 1rem; }
+    .page-title { display: flex; align-items: center; gap: 1rem; }
+    .page-title h1 { font-size: 2rem; font-weight: 700; color: #1e293b; }
+    .back-btn { background: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .back-btn:hover { background: #0056b3; }
+    .content-area { background: white; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .activity-list { margin-top: 1rem; }
+    .activity-item { display: flex; align-items: center; padding: 1.5rem; border-bottom: 1px solid #e2e8f0; transition: background 0.2s; }
+    .activity-item:hover { background: #f8fafc; }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-icon { font-size: 2rem; margin-right: 1rem; width: 48px; text-align: center; }
+    .activity-content { flex: 1; }
+    .activity-title { font-size: 1.125rem; font-weight: 600; color: #1e293b; margin-bottom: 0.25rem; }
+    .activity-description { color: #64748b; font-size: 0.875rem; }
+    .activity-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
+    .activity-amount { font-size: 1.25rem; font-weight: 700; color: #1e293b; }
+    .activity-amount.positive { color: #28a745; }
+    .activity-amount.negative { color: #dc3545; }
+    .activity-date { font-size: 0.875rem; color: #64748b; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #64748b; }
+    .empty-state h3 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #1e293b; }
+    .loading { text-align: center; padding: 2rem; color: #64748b; }
+    .error-message { background: #fee; color: #c33; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    @media (max-width: 768px) {
+      .activity-item { flex-direction: column; align-items: flex-start; }
+      .activity-meta { flex-direction: row; align-items: center; width: 100%; margin-top: 0.5rem; }
+      .activity-amount { font-size: 1.125rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-title">
+        <span style="font-size: 2rem;">🧾</span>
+        <h1>Activity Feed</h1>
+      </div>
+      <a href="/index.html" class="back-btn">← Back to Home</a>
+    </div>
+    
+    <div class="content-area">
+      <h2 style="font-size: 1.5rem; margin-bottom: 1rem; color: #1e293b;">Financial Activity History</h2>
+      
+      <div id="messageContainer"></div>
+      
+      <div id="activityContainer">
+        <div class="loading">Loading activity feed...</div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let activities = [];
+    
+    // Wait for DataService and auth to be ready
+    async function init() {
+      try {
+        await waitForAuth(5000);
+        if (!window.DataService) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        if (window.DataService) {
+          loadActivities();
+        } else {
+          showError('DataService not available. Please refresh the page.');
+        }
+      } catch (error) {
+        console.error('Initialization error:', error);
+        showError('Failed to initialize. Please refresh the page.');
+      }
+    }
+    
+    async function loadActivities() {
+      try {
+        const container = document.getElementById('activityContainer');
+        container.innerHTML = '<div class="loading">Loading activity feed...</div>';
+        
+        // Load activities from DataService
+        activities = await window.DataService.getActivities(50);
+        
+        // Also try to generate activities from other data sources
+        await generateActivitiesFromData();
+        
+        // Sort by date (newest first)
+        activities.sort((a, b) => {
+          const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+          const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+          return dateB - dateA;
+        });
+        
+        renderActivities();
+      } catch (error) {
+        console.error('Error loading activities:', error);
+        showError('Failed to load activities. ' + error.message);
+        document.getElementById('activityContainer').innerHTML = '<div class="empty-state"><h3>Error loading activities</h3><p>Please try refreshing the page.</p></div>';
+      }
+    }
+    
+    async function generateActivitiesFromData() {
+      try {
+        // Generate activities from debts
+        const debts = await window.DataService.getDebts();
+        debts.forEach(debt => {
+          activities.push({
+            id: 'debt-' + debt.id,
+            type: 'debt',
+            description: `Added debt: ${debt.name}`,
+            amount: -debt.balance,
+            date: debt.createdAt
+          });
+        });
+        
+        // Generate activities from budgets
+        const budgets = await window.DataService.getBudgets();
+        budgets.forEach(budget => {
+          activities.push({
+            id: 'budget-' + budget.id,
+            type: 'budget',
+            description: `Created budget: ${budget.category}`,
+            amount: budget.budgetedAmount,
+            date: budget.createdAt
+          });
+        });
+        
+        // Generate activities from savings goals
+        const goals = await window.DataService.getSavingsGoals();
+        goals.forEach(goal => {
+          activities.push({
+            id: 'goal-' + goal.id,
+            type: 'goal',
+            description: `Set savings goal: ${goal.name}`,
+            amount: goal.targetAmount,
+            date: goal.createdAt
+          });
+        });
+        
+        // Generate activity from net worth
+        const netWorth = await window.DataService.getNetWorth();
+        if (netWorth) {
+          activities.push({
+            id: 'networth-' + netWorth.id,
+            type: 'networth',
+            description: `Updated net worth`,
+            amount: (netWorth.assets || 0) - (netWorth.liabilities || 0),
+            date: netWorth.date || netWorth.createdAt
+          });
+        }
+      } catch (error) {
+        console.warn('Error generating activities from data:', error);
+      }
+    }
+    
+    function renderActivities() {
+      const container = document.getElementById('activityContainer');
+      
+      if (activities.length === 0) {
+        container.innerHTML = '<div class="empty-state"><h3>No Activity Yet</h3><p>Your financial activities will appear here as you use the app.</p></div>';
+        return;
+      }
+      
+      const icons = {
+        'debt': '📋',
+        'budget': '💰',
+        'goal': '🎯',
+        'networth': '💎',
+        'transaction': '💵',
+        'payment': '💳',
+        'default': '📊'
+      };
+      
+      const activitiesHtml = activities.map(activity => {
+        const date = activity.date?.toDate ? activity.date.toDate() : new Date(activity.date || activity.createdAt);
+        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        
+        const amount = activity.amount || 0;
+        const amountClass = amount > 0 ? 'positive' : amount < 0 ? 'negative' : '';
+        const amountDisplay = amount !== 0 ? window.DataService.formatCurrency(Math.abs(amount)) : '-';
+        
+        const icon = icons[activity.type] || icons['default'];
+        
+        return `
+          <div class="activity-item">
+            <div class="activity-icon">${icon}</div>
+            <div class="activity-content">
+              <div class="activity-title">${escapeHtml(activity.description || activity.type || 'Activity')}</div>
+              <div class="activity-description">${dateStr} at ${timeStr}</div>
+            </div>
+            <div class="activity-meta">
+              <div class="activity-amount ${amountClass}">${amountDisplay}</div>
+              <div class="activity-date">${dateStr}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      container.innerHTML = `<div class="activity-list">${activitiesHtml}</div>`;
+    }
+    
+    function showError(message) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

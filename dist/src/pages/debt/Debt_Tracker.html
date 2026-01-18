@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Debt Tracker | Bradley's Financial Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#007bff">
+  
+  <script src="/config.js"></script>
+  <script type="module" src="/firebase-config.js"></script>
+  <script src="/utils/validation.js"></script>
+  <script src="/utils/errorHandler.js"></script>
+  <script src="/utils/performance.js"></script>
+  <script src="/utils/themeManager.js"></script>
+  <script src="/utils/authHelper.js"></script>
+  <script src="/utils/dataService.js"></script>
+  <script type="module" src="/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; min-height: 100vh; }
+    .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; gap: 1rem; }
+    .page-title { display: flex; align-items: center; gap: 1rem; }
+    .page-title h1 { font-size: 2rem; font-weight: 700; color: #1e293b; }
+    .back-btn { background: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .back-btn:hover { background: #0056b3; }
+    .content-area { background: white; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-primary:hover { background: #0056b3; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-danger:hover { background: #c82333; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #5a6268; }
+    .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 0.75rem; }
+    .summary-card h3 { font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem; }
+    .summary-card .value { font-size: 2rem; font-weight: 700; }
+    .debts-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .debts-table th, .debts-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    .debts-table th { background: #f8fafc; font-weight: 600; color: #475569; }
+    .debts-table tr:hover { background: #f8fafc; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #64748b; }
+    .empty-state h3 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #1e293b; }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+    .modal.active { display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: white; padding: 2rem; border-radius: 0.75rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-header h2 { font-size: 1.5rem; color: #1e293b; }
+    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; }
+    .close-btn:hover { color: #1e293b; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; }
+    .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+    .form-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; }
+    .error-message { background: #fee; color: #c33; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .success-message { background: #efe; color: #3c3; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .loading { text-align: center; padding: 2rem; color: #64748b; }
+    @media (max-width: 768px) {
+      .debts-table { font-size: 0.875rem; }
+      .debts-table th, .debts-table td { padding: 0.75rem 0.5rem; }
+      .summary-cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-title">
+        <span style="font-size: 2rem;">📋</span>
+        <h1>Debt Tracker</h1>
+      </div>
+      <a href="/index.html" class="back-btn">← Back to Home</a>
+    </div>
+    
+    <div class="content-area">
+      <div class="action-bar">
+        <h2 style="font-size: 1.5rem; color: #1e293b;">Your Debts</h2>
+        <button class="btn btn-primary" onclick="openAddDebtModal()">+ Add Debt</button>
+      </div>
+      
+      <div id="messageContainer"></div>
+      
+      <div id="summaryCards" class="summary-cards" style="display: none;">
+        <div class="summary-card">
+          <h3>Total Debt</h3>
+          <div class="value" id="totalDebt">$0</div>
+        </div>
+        <div class="summary-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <h3>Total Interest Rate</h3>
+          <div class="value" id="avgInterestRate">0%</div>
+        </div>
+        <div class="summary-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <h3>Monthly Payments</h3>
+          <div class="value" id="totalMonthly">$0</div>
+        </div>
+      </div>
+      
+      <div id="debtsContainer">
+        <div class="loading">Loading debts...</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add/Edit Debt Modal -->
+  <div id="debtModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add Debt</h2>
+        <button class="close-btn" onclick="closeDebtModal()">&times;</button>
+      </div>
+      <form id="debtForm" onsubmit="saveDebt(event)">
+        <div class="form-group">
+          <label for="debtName">Debt Name *</label>
+          <input type="text" id="debtName" name="name" required placeholder="e.g., Credit Card, Car Loan">
+        </div>
+        <div class="form-group">
+          <label for="debtBalance">Current Balance *</label>
+          <input type="number" id="debtBalance" name="balance" required min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label for="debtInterestRate">Interest Rate (%) *</label>
+          <input type="number" id="debtInterestRate" name="interestRate" required min="0" max="100" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label for="debtMinimumPayment">Minimum Payment *</label>
+          <input type="number" id="debtMinimumPayment" name="minimumPayment" required min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label for="debtDueDate">Due Date (Optional)</label>
+          <input type="date" id="debtDueDate" name="dueDate">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeDebtModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Debt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <script>
+    let debts = [];
+    let editingDebtId = null;
+    
+    // Wait for DataService and auth to be ready
+    async function init() {
+      try {
+        await waitForAuth(5000);
+        if (!window.DataService) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        if (window.DataService) {
+          loadDebts();
+        } else {
+          showError('DataService not available. Please refresh the page.');
+        }
+      } catch (error) {
+        console.error('Initialization error:', error);
+        showError('Failed to initialize. Please refresh the page.');
+      }
+    }
+    
+    async function loadDebts() {
+      try {
+        const container = document.getElementById('debtsContainer');
+        container.innerHTML = '<div class="loading">Loading debts...</div>';
+        
+        debts = await window.DataService.getDebts();
+        renderDebts();
+        updateSummary();
+      } catch (error) {
+        console.error('Error loading debts:', error);
+        showError('Failed to load debts. ' + error.message);
+        document.getElementById('debtsContainer').innerHTML = '<div class="empty-state"><h3>Error loading debts</h3><p>Please try refreshing the page.</p></div>';
+      }
+    }
+    
+    function renderDebts() {
+      const container = document.getElementById('debtsContainer');
+      
+      if (debts.length === 0) {
+        container.innerHTML = '<div class="empty-state"><h3>No Debts Tracked</h3><p>Click "Add Debt" to start tracking your debts.</p></div>';
+        document.getElementById('summaryCards').style.display = 'none';
+        return;
+      }
+      
+      document.getElementById('summaryCards').style.display = 'grid';
+      
+      const table = `
+        <table class="debts-table">
+          <thead>
+            <tr>
+              <th>Debt Name</th>
+              <th>Balance</th>
+              <th>Interest Rate</th>
+              <th>Minimum Payment</th>
+              <th>Due Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${debts.map(debt => `
+              <tr>
+                <td><strong>${escapeHtml(debt.name)}</strong></td>
+                <td>${window.DataService.formatCurrency(debt.balance)}</td>
+                <td>${debt.interestRate.toFixed(2)}%</td>
+                <td>${window.DataService.formatCurrency(debt.minimumPayment)}</td>
+                <td>${debt.dueDate ? formatDebtDate(debt.dueDate) : 'N/A'}</td>
+                <td>
+                  <button class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;" onclick="editDebt('${debt.id}')">Edit</button>
+                  <button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem; margin-left: 0.5rem;" onclick="deleteDebt('${debt.id}')">Delete</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      
+      container.innerHTML = table;
+    }
+    
+    function updateSummary() {
+      if (debts.length === 0) return;
+      
+      const totalDebt = debts.reduce((sum, debt) => sum + (debt.balance || 0), 0);
+      const totalMonthly = debts.reduce((sum, debt) => sum + (debt.minimumPayment || 0), 0);
+      const weightedInterest = debts.reduce((sum, debt) => sum + (debt.balance * debt.interestRate || 0), 0);
+      const avgInterestRate = totalDebt > 0 ? (weightedInterest / totalDebt) : 0;
+      
+      document.getElementById('totalDebt').textContent = window.DataService.formatCurrency(totalDebt);
+      document.getElementById('avgInterestRate').textContent = avgInterestRate.toFixed(2) + '%';
+      document.getElementById('totalMonthly').textContent = window.DataService.formatCurrency(totalMonthly);
+    }
+    
+    function openAddDebtModal() {
+      editingDebtId = null;
+      document.getElementById('modalTitle').textContent = 'Add Debt';
+      document.getElementById('debtForm').reset();
+      document.getElementById('debtModal').classList.add('active');
+    }
+    
+    function editDebt(debtId) {
+      const debt = debts.find(d => d.id === debtId);
+      if (!debt) return;
+      
+      editingDebtId = debtId;
+      document.getElementById('modalTitle').textContent = 'Edit Debt';
+      document.getElementById('debtName').value = debt.name;
+      document.getElementById('debtBalance').value = debt.balance;
+      document.getElementById('debtInterestRate').value = debt.interestRate;
+      document.getElementById('debtMinimumPayment').value = debt.minimumPayment;
+      if (debt.dueDate) {
+        const dateStr = parseDebtDate(debt.dueDate);
+        if (dateStr) {
+          document.getElementById('debtDueDate').value = dateStr;
+        }
+      }
+      document.getElementById('debtModal').classList.add('active');
+    }
+    
+    function closeDebtModal() {
+      document.getElementById('debtModal').classList.remove('active');
+      editingDebtId = null;
+      document.getElementById('debtForm').reset();
+    }
+    
+    async function saveDebt(event) {
+      event.preventDefault();
+      
+      const formData = {
+        name: document.getElementById('debtName').value.trim(),
+        balance: parseFloat(document.getElementById('debtBalance').value),
+        interestRate: parseFloat(document.getElementById('debtInterestRate').value),
+        minimumPayment: parseFloat(document.getElementById('debtMinimumPayment').value),
+        dueDate: document.getElementById('debtDueDate').value || null
+      };
+      
+      if (!formData.name || formData.balance < 0 || formData.interestRate < 0 || formData.minimumPayment < 0) {
+        showError('Please fill in all required fields with valid values.');
+        return;
+      }
+      
+      try {
+        if (editingDebtId) {
+          await window.DataService.updateDebt(editingDebtId, formData);
+          showSuccess('Debt updated successfully!');
+        } else {
+          await window.DataService.addDebt(formData);
+          showSuccess('Debt added successfully!');
+        }
+        
+        closeDebtModal();
+        await loadDebts();
+      } catch (error) {
+        console.error('Error saving debt:', error);
+        showError('Failed to save debt. ' + error.message);
+      }
+    }
+    
+    async function deleteDebt(debtId) {
+      if (!confirm('Are you sure you want to delete this debt?')) return;
+      
+      try {
+        await window.DataService.deleteDebt(debtId);
+        showSuccess('Debt deleted successfully!');
+        await loadDebts();
+      } catch (error) {
+        console.error('Error deleting debt:', error);
+        showError('Failed to delete debt. ' + error.message);
+      }
+    }
+    
+    function showError(message) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+    
+    function showSuccess(message) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div class="success-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => container.innerHTML = '', 3000);
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Helper function to format debt date for display
+    function formatDebtDate(dateValue) {
+      if (!dateValue) return '';
+      
+      try {
+        // If it's a Firestore Timestamp object
+        if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+          return dateValue.toDate().toLocaleDateString();
+        }
+        
+        // If it has seconds property (Firestore Timestamp)
+        if (dateValue.seconds !== undefined) {
+          return new Date(dateValue.seconds * 1000).toLocaleDateString();
+        }
+        
+        // If it's a string (YYYY-MM-DD format from date input)
+        if (typeof dateValue === 'string') {
+          const date = new Date(dateValue);
+          if (!isNaN(date.getTime())) {
+            return date.toLocaleDateString();
+          }
+        }
+        
+        // If it's already a Date object
+        if (dateValue instanceof Date) {
+          return dateValue.toLocaleDateString();
+        }
+        
+        // Fallback: try to create a Date from the value
+        const date = new Date(dateValue);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString();
+        }
+      } catch (error) {
+        console.error('Error formatting date:', error, dateValue);
+      }
+      
+      return 'Invalid Date';
+    }
+    
+    // Helper function to parse debt date for date input (returns YYYY-MM-DD format)
+    function parseDebtDate(dateValue) {
+      if (!dateValue) return '';
+      
+      try {
+        // If it's a Firestore Timestamp object
+        if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+          const date = dateValue.toDate();
+          return date.toISOString().split('T')[0];
+        }
+        
+        // If it has seconds property (Firestore Timestamp)
+        if (dateValue.seconds !== undefined) {
+          const date = new Date(dateValue.seconds * 1000);
+          return date.toISOString().split('T')[0];
+        }
+        
+        // If it's already a string in YYYY-MM-DD format
+        if (typeof dateValue === 'string') {
+          // Check if it's already in the correct format
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+            return dateValue;
+          }
+          // Otherwise try to parse it
+          const date = new Date(dateValue);
+          if (!isNaN(date.getTime())) {
+            return date.toISOString().split('T')[0];
+          }
+        }
+        
+        // If it's already a Date object
+        if (dateValue instanceof Date) {
+          return dateValue.toISOString().split('T')[0];
+        }
+      } catch (error) {
+        console.error('Error parsing date:', error, dateValue);
+      }
+      
+      return '';
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('debtModal').addEventListener('click', function(e) {
+      if (e.target === this) closeDebtModal();
+    });
+    
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

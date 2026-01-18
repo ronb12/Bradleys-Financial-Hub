@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create Account | Bradley's Financial Tools</title>
+  <link rel="stylesheet" href="src/styles/theme.css">
+  <link rel="stylesheet" href="src/styles/auth/login.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="/config.js"></script>
+  <script src="/utils/validation.js"></script>
+  <script src="/utils/errorHandler.js"></script>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="VB Toolkit">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, rgba(17, 24, 39, 0.88), rgba(37, 99, 235, 0.75)),
+                  url('https://images.pexels.com/photos/4386326/pexels-photo-4386326.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=1600&w=2400') center/cover fixed no-repeat;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      color: #1e293b;
+    }
+
+    .register-container {
+      background: rgba(255, 255, 255, 0.92);
+      padding: 2.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .logo-container {
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      width: 120px;
+      height: auto;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 1.875rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      border-color: #2563eb;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    button {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 1rem;
+    }
+
+    .register-btn {
+      background: #2563eb;
+      color: white;
+    }
+
+    .register-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .google-btn {
+      background: white;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .google-btn:hover {
+      background: #f8fafc;
+    }
+
+    .google-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .error {
+      color: #ef4444;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      text-align: left;
+    }
+
+    a {
+      color: #2563eb;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 640px) {
+      .register-container {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="register-container">
+    <div class="logo-container">
+      <img src="icons/icon-192.png" alt="Bradley's Financial Tools Logo" class="logo">
+      <h1>Create Account</h1>
+    </div>
+    <div id="error" class="error"></div>
+    <form id="registerForm" onsubmit="return false;">
+      <div class="form-group">
+        <input type="text" id="displayName" placeholder="Full Name (optional)" autocomplete="name" />
+        <div class="field-error" id="nameError"></div>
+      </div>
+      <div class="form-group">
+        <input type="email" id="email" placeholder="Email address" required autocomplete="email" />
+        <div class="field-error" id="emailError"></div>
+      </div>
+      <div class="form-group">
+        <input type="password" id="password" placeholder="Password" required autocomplete="new-password" minlength="6" />
+        <div class="field-error" id="passwordError"></div>
+      </div>
+      <div class="form-group">
+        <input type="password" id="confirmPassword" placeholder="Confirm Password" required autocomplete="new-password" minlength="6" />
+        <div class="field-error" id="confirmPasswordError"></div>
+      </div>
+      <button type="submit" class="register-btn" id="registerBtn">
+        <span class="btn-text">Create Account</span>
+        <span class="btn-spinner" style="display: none;">⏳</span>
+      </button>
+      <button type="button" id="googleRegisterBtn" class="google-btn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="google-icon">
+        Sign up with Google
+      </button>
+    </form>
+    <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem;">
+      Already have an account? <a href="/login.html">Sign in</a>
+    </p>
+  </div>
+
+  <script type="module">
+    import { auth, register as authRegister } from './auth.js';
+    import { GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+    
+    // Initialize error handling
+    if (typeof ErrorHandler !== 'undefined' && ErrorHandler.setupGlobalErrorHandling) {
+      ErrorHandler.setupGlobalErrorHandling();
+    }
+
+    document.getElementById('registerForm').onsubmit = register;
+    document.getElementById('googleRegisterBtn').onclick = googleRegister;
+
+    async function register(e) {
+      if (e) e.preventDefault();
+      
+      const displayNameInput = document.getElementById('displayName');
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.getElementById('password');
+      const confirmPasswordInput = document.getElementById('confirmPassword');
+      const registerBtn = document.getElementById('registerBtn');
+      const btnText = registerBtn.querySelector('.btn-text');
+      const btnSpinner = registerBtn.querySelector('.btn-spinner');
+      
+      // Clear previous errors
+      clearFieldErrors();
+      
+      try {
+        // Validate inputs
+        let email;
+        try {
+          if (typeof ValidationUtils !== 'undefined' && ValidationUtils.validateEmail) {
+            email = ValidationUtils.validateEmail(emailInput.value);
+          } else {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailInput.value)) {
+              throw new Error('Please enter a valid email address');
+            }
+            email = emailInput.value.toLowerCase().trim();
+          }
+        } catch (validationError) {
+          showFieldError('emailError', validationError.message);
+          registerBtn.disabled = false;
+          btnText.style.display = 'inline';
+          btnSpinner.style.display = 'none';
+          return;
+        }
+
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        const displayName = displayNameInput.value.trim();
+
+        // Validate password
+        if (!password) {
+          showFieldError('passwordError', 'Password is required');
+          registerBtn.disabled = false;
+          btnText.style.display = 'inline';
+          btnSpinner.style.display = 'none';
+          return;
+        }
+
+        if (password.length < 6) {
+          showFieldError('passwordError', 'Password must be at least 6 characters');
+          registerBtn.disabled = false;
+          btnText.style.display = 'inline';
+          btnSpinner.style.display = 'none';
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          showFieldError('confirmPasswordError', 'Passwords do not match');
+          registerBtn.disabled = false;
+          btnText.style.display = 'inline';
+          btnSpinner.style.display = 'none';
+          return;
+        }
+
+        // Show loading state
+        registerBtn.disabled = true;
+        btnText.style.display = 'none';
+        btnSpinner.style.display = 'inline';
+
+        // Register user
+        const userRecord = await authRegister(email, password, displayName || '');
+        
+        if (!userRecord) {
+          const errorMessage = 'Registration failed. Please try again.';
+          if (typeof ErrorHandler !== 'undefined' && ErrorHandler.showError) {
+            ErrorHandler.showError(errorMessage);
+          } else {
+            document.getElementById('error').textContent = errorMessage;
+          }
+          registerBtn.disabled = false;
+          btnText.style.display = 'inline';
+          btnSpinner.style.display = 'none';
+          return;
+        }
+
+        if (userRecord) {
+          // Set flag to prevent auth.js from redirecting
+          sessionStorage.setItem('login-handling-redirect', 'true');
+          sessionStorage.removeItem('auth-redirect-done');
+          sessionStorage.setItem('last-auth-redirect-time', Date.now().toString());
+          
+          const successMessage = 'Account created successfully! Redirecting...';
+          if (typeof ErrorHandler !== 'undefined' && ErrorHandler.showSuccess) {
+            ErrorHandler.showSuccess(successMessage);
+          } else {
+            document.getElementById('error').textContent = successMessage;
+            document.getElementById('error').style.color = '#10b981';
+          }
+          
+          // Redirect to dashboard after successful registration
+          setTimeout(() => {
+            try {
+              window.location.replace('/dashboard.html');
+            } catch (error) {
+              console.error('[Register] Redirect error:', error);
+              window.location.replace(window.location.origin + '/dashboard.html');
+            }
+          }, 500);
+        }
+        
+      } catch (error) {
+        console.error('Registration attempt failed:', error.code || error.name, error.message);
+        if (error.message.includes('email')) {
+          showFieldError('emailError', error.message);
+        } else if (error.message.includes('password')) {
+          showFieldError('passwordError', error.message);
+        } else {
+          if (typeof ErrorHandler !== 'undefined' && ErrorHandler.handleFirebaseError) {
+            ErrorHandler.handleFirebaseError(error);
+          } else {
+            const errorElement = document.getElementById('error');
+            if (errorElement) {
+              errorElement.textContent = error.message || 'An error occurred. Please try again.';
+            }
+          }
+        }
+      } finally {
+        // Reset button state
+        registerBtn.disabled = false;
+        btnText.style.display = 'inline';
+        btnSpinner.style.display = 'none';
+      }
+    }
+
+    // Helper functions
+    function clearFieldErrors() {
+      document.getElementById('nameError').textContent = '';
+      document.getElementById('emailError').textContent = '';
+      document.getElementById('passwordError').textContent = '';
+      document.getElementById('confirmPasswordError').textContent = '';
+      document.getElementById('error').textContent = '';
+    }
+
+    function showFieldError(fieldId, message) {
+      const errorElement = document.getElementById(fieldId);
+      if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.color = '#ef4444';
+        errorElement.style.fontSize = '0.875rem';
+        errorElement.style.marginTop = '0.25rem';
+      }
+    }
+
+    function googleRegister() {
+      const provider = new GoogleAuthProvider();
+      signInWithPopup(auth, provider)
+        .then(() => {
+          // Set flag to prevent auth.js from redirecting
+          sessionStorage.setItem('login-handling-redirect', 'true');
+          sessionStorage.removeItem('auth-redirect-done');
+          sessionStorage.setItem('last-auth-redirect-time', Date.now().toString());
+          
+          // Redirect to dashboard after successful Google signup
+          setTimeout(() => {
+            try {
+              window.location.replace('/dashboard.html');
+            } catch (error) {
+              console.error('[Register] Google redirect error:', error);
+              window.location.replace(window.location.origin + '/dashboard.html');
+            }
+          }, 500);
+        })
+        .catch(error => {
+          const errorElement = document.getElementById("error");
+          if (errorElement) {
+            if (typeof ErrorHandler !== 'undefined' && ErrorHandler.handleFirebaseError) {
+              ErrorHandler.handleFirebaseError(error);
+            } else {
+              errorElement.innerText = error.message || 'Google signup failed';
+            }
+          }
+        });
+    }
+  </script>
+</body>
+</html>

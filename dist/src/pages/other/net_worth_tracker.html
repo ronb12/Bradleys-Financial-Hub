@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Net Worth Tracker | Bradley's Financial Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#007bff">
+  
+  <script src="/config.js"></script>
+  <script type="module" src="/firebase-config.js"></script>
+  <script src="/utils/validation.js"></script>
+  <script src="/utils/errorHandler.js"></script>
+  <script src="/utils/performance.js"></script>
+  <script src="/utils/themeManager.js"></script>
+  <script src="/utils/authHelper.js"></script>
+  <script src="/utils/dataService.js"></script>
+  <script type="module" src="/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; min-height: 100vh; }
+    .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; gap: 1rem; }
+    .page-title { display: flex; align-items: center; gap: 1rem; }
+    .page-title h1 { font-size: 2rem; font-weight: 700; color: #1e293b; }
+    .back-btn { background: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .back-btn:hover { background: #0056b3; }
+    .content-area { background: white; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .net-worth-display { text-align: center; padding: 3rem 2rem; margin-bottom: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.75rem; }
+    .net-worth-label { font-size: 1.25rem; opacity: 0.9; margin-bottom: 0.5rem; }
+    .net-worth-value { font-size: 3.5rem; font-weight: 700; }
+    .breakdown-section { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+    .breakdown-card { background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; border: 2px solid #e2e8f0; }
+    .breakdown-card h3 { font-size: 1.25rem; margin-bottom: 1rem; color: #1e293b; }
+    .breakdown-card.assets h3 { color: #28a745; }
+    .breakdown-card.liabilities h3 { color: #dc3545; }
+    .breakdown-item { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0; }
+    .breakdown-item:last-child { border-bottom: none; font-weight: 700; font-size: 1.125rem; padding-top: 1rem; margin-top: 0.5rem; border-top: 2px solid #e2e8f0; }
+    .breakdown-label { color: #64748b; }
+    .breakdown-value { font-weight: 600; color: #1e293b; }
+    .form-section { margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e2e8f0; }
+    .form-section h3 { font-size: 1.5rem; margin-bottom: 1rem; color: #1e293b; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+    .form-group { }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; }
+    .form-group input { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; }
+    .form-group input:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+    .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-primary:hover { background: #0056b3; }
+    .btn-small { padding: 0.5rem 1rem; font-size: 0.875rem; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-success:hover { background: #218838; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-danger:hover { background: #c82333; }
+    .line-item-controls { margin-top: 1rem; }
+    .line-item-form { display: grid; grid-template-columns: 2fr 1fr auto; gap: 0.75rem; align-items: end; margin-bottom: 0.75rem; }
+    .line-item-form input { padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.875rem; }
+    .breakdown-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0; }
+    .breakdown-item-actions { display: flex; gap: 0.5rem; }
+    .breakdown-item-actions button { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 0.875rem; padding: 0.25rem 0.5rem; }
+    .breakdown-item-actions button:hover { color: #c82333; text-decoration: underline; }
+    .error-message { background: #fee; color: #c33; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .success-message { background: #efe; color: #3c3; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #64748b; }
+    .empty-state h3 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #1e293b; }
+    @media (max-width: 768px) {
+      .breakdown-section { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .net-worth-value { font-size: 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-title">
+        <span style="font-size: 2rem;">💎</span>
+        <h1>Net Worth Tracker</h1>
+      </div>
+      <a href="/index.html" class="back-btn">← Back to Home</a>
+    </div>
+    
+    <div class="content-area">
+      <div id="messageContainer"></div>
+      
+      <div id="netWorthDisplay" style="display: none;">
+        <div class="net-worth-display">
+          <div class="net-worth-label">Your Net Worth</div>
+          <div class="net-worth-value" id="netWorthValue">$0</div>
+        </div>
+        
+        <div class="breakdown-section">
+          <div class="breakdown-card assets">
+            <h3>💰 Assets</h3>
+            <div id="assetsList">
+              <!-- Assets will be populated here -->
+            </div>
+            <div class="breakdown-item">
+              <span class="breakdown-label">Total Assets</span>
+              <span class="breakdown-value" id="totalAssets">$0</span>
+            </div>
+          </div>
+          
+          <div class="breakdown-card liabilities">
+            <h3>📋 Liabilities</h3>
+            <div id="liabilitiesList">
+              <!-- Liabilities will be populated here -->
+            </div>
+            <div class="breakdown-item">
+              <span class="breakdown-label">Total Liabilities</span>
+              <span class="breakdown-value" id="totalLiabilities">$0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-section">
+        <h3>Manage Your Net Worth</h3>
+        
+        <div style="margin-bottom: 2rem;">
+          <h4 style="font-size: 1.125rem; margin-bottom: 1rem; color: #1e293b;">Quick Entry (Total Amounts)</h4>
+          <form id="netWorthForm" onsubmit="saveNetWorthTotals(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="assetsAmount">Total Assets</label>
+                <input type="number" id="assetsAmount" name="assets" min="0" step="0.01" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="liabilitiesAmount">Total Liabilities</label>
+                <input type="number" id="liabilitiesAmount" name="liabilities" min="0" step="0.01" placeholder="0.00">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Net Worth Totals</button>
+          </form>
+        </div>
+        
+        <div style="border-top: 2px solid #e2e8f0; padding-top: 2rem;">
+          <h4 style="font-size: 1.125rem; margin-bottom: 1rem; color: #1e293b;">📋 Add Line Items</h4>
+          
+          <div class="breakdown-card assets" style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.125rem; margin-bottom: 1rem;">Add Asset</h3>
+            <div class="line-item-form">
+              <input type="text" id="assetName" placeholder="e.g., Checking Account, Home Value" required>
+              <input type="number" id="assetAmount" step="0.01" min="0" placeholder="0.00" required>
+              <button type="button" class="btn btn-success btn-small" onclick="addAsset()">Add Asset</button>
+            </div>
+          </div>
+          
+          <div class="breakdown-card liabilities" style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.125rem; margin-bottom: 1rem;">Add Liability</h3>
+            <div class="line-item-form">
+              <input type="text" id="liabilityName" placeholder="e.g., Mortgage, Car Loan" required>
+              <input type="number" id="liabilityAmount" step="0.01" min="0" placeholder="0.00" required>
+              <button type="button" class="btn btn-success btn-small" onclick="addLiability()">Add Liability</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let currentNetWorth = null;
+    let assets = [];
+    let liabilities = [];
+    
+    // Wait for DataService and auth to be ready
+    async function init() {
+      try {
+        await waitForAuth(5000);
+        if (!window.DataService) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        if (window.DataService) {
+          loadNetWorth();
+        } else {
+          showError('DataService not available. Please refresh the page.');
+        }
+      } catch (error) {
+        console.error('Initialization error:', error);
+        showError('Failed to initialize. Please refresh the page.');
+      }
+    }
+    
+    async function loadNetWorth() {
+      try {
+        currentNetWorth = await window.DataService.getNetWorth();
+        
+        // Also try to load debts to calculate liabilities
+        try {
+          const debts = await window.DataService.getDebts();
+          const totalDebt = debts.reduce((sum, debt) => sum + (debt.balance || 0), 0);
+          
+          if (currentNetWorth) {
+            // Use saved net worth if available
+            displayNetWorth(currentNetWorth.assets || 0, currentNetWorth.liabilities || totalDebt);
+          } else {
+            // If no saved net worth, calculate from debts
+            displayNetWorth(0, totalDebt);
+          }
+          
+          // Populate liabilities from debts
+          if (debts.length > 0) {
+            liabilities = debts.map(debt => ({
+              name: debt.name,
+              amount: debt.balance || 0
+            }));
+          }
+        } catch (err) {
+          console.warn('Could not load debts:', err);
+          if (currentNetWorth) {
+            displayNetWorth(currentNetWorth.assets || 0, currentNetWorth.liabilities || 0);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading net worth:', error);
+        // Still show form even if loading fails
+        document.getElementById('netWorthDisplay').style.display = 'block';
+        displayNetWorth(0, 0);
+      }
+    }
+    
+    function displayNetWorth(assetsTotal, liabilitiesTotal) {
+      const netWorth = assetsTotal - liabilitiesTotal;
+      
+      document.getElementById('netWorthValue').textContent = window.DataService.formatCurrency(netWorth);
+      document.getElementById('totalAssets').textContent = window.DataService.formatCurrency(assetsTotal);
+      document.getElementById('totalLiabilities').textContent = window.DataService.formatCurrency(liabilitiesTotal);
+      
+      // Populate assets list with line items
+      const assetsList = document.getElementById('assetsList');
+      const assetsTotalFromItems = assets.reduce((sum, asset) => sum + (asset.amount || 0), 0);
+      
+      if (assets.length > 0) {
+        assetsList.innerHTML = assets.map((asset, index) => `
+          <div class="breakdown-item">
+            <span class="breakdown-label">${escapeHtml(asset.name || 'Asset')}</span>
+            <span class="breakdown-value">${window.DataService.formatCurrency(asset.amount || 0)}</span>
+            <span class="breakdown-item-actions">
+              <button onclick="removeAsset(${index})" title="Remove">✕</button>
+            </span>
+          </div>
+        `).join('');
+      } else {
+        assetsList.innerHTML = '<div class="breakdown-item"><span class="breakdown-label" style="color: #64748b;">No assets entered yet. Add assets below.</span></div>';
+      }
+      
+      // Update total assets if we have line items
+      const finalAssetsTotal = assetsTotalFromItems > 0 ? assetsTotalFromItems : assetsTotal;
+      if (assets.length > 0 && assetsTotalFromItems > 0) {
+        document.getElementById('totalAssets').textContent = window.DataService.formatCurrency(assetsTotalFromItems);
+      }
+      
+      // Populate liabilities list with line items
+      const liabilitiesList = document.getElementById('liabilitiesList');
+      const liabilitiesTotalFromItems = liabilities.reduce((sum, liability) => sum + (liability.amount || 0), 0);
+      
+      if (liabilities.length > 0) {
+        liabilitiesList.innerHTML = liabilities.map((liability, index) => `
+          <div class="breakdown-item">
+            <span class="breakdown-label">${escapeHtml(liability.name || 'Liability')}</span>
+            <span class="breakdown-value">${window.DataService.formatCurrency(liability.amount || 0)}</span>
+            <span class="breakdown-item-actions">
+              <button onclick="removeLiability(${index})" title="Remove">✕</button>
+            </span>
+          </div>
+        `).join('');
+      } else {
+        liabilitiesList.innerHTML = '<div class="breakdown-item"><span class="breakdown-label" style="color: #64748b;">No liabilities entered yet. Add liabilities below or they will be calculated from your debts.</span></div>';
+      }
+      
+      // Update total liabilities if we have line items
+      const finalLiabilitiesTotal = liabilitiesTotalFromItems > 0 ? liabilitiesTotalFromItems : liabilitiesTotal;
+      if (liabilities.length > 0 && liabilitiesTotalFromItems > 0) {
+        document.getElementById('totalLiabilities').textContent = window.DataService.formatCurrency(liabilitiesTotalFromItems);
+      }
+      
+      document.getElementById('netWorthDisplay').style.display = 'block';
+    }
+    
+    async function saveNetWorthTotals(event) {
+      event.preventDefault();
+      
+      const assetsTotal = parseFloat(document.getElementById('assetsAmount').value || 0);
+      const liabilitiesTotal = parseFloat(document.getElementById('liabilitiesAmount').value || 0);
+      
+      // Also calculate from line items if present
+      const assetsFromItems = assets.reduce((sum, asset) => sum + (asset.amount || 0), 0);
+      const liabilitiesFromItems = liabilities.reduce((sum, liability) => sum + (liability.amount || 0), 0);
+      
+      // Use line items total if provided, otherwise use form input
+      const finalAssets = assetsFromItems > 0 ? assetsFromItems : assetsTotal;
+      const finalLiabilities = liabilitiesFromItems > 0 ? liabilitiesFromItems : liabilitiesTotal;
+      
+      if (finalAssets < 0 || finalLiabilities < 0) {
+        showError('Please enter valid positive values.');
+        return;
+      }
+      
+      try {
+        await window.DataService.saveNetWorth({ assets: finalAssets, liabilities: finalLiabilities });
+        showSuccess('Net worth saved successfully!');
+        
+        // Reload to display updated values
+        await loadNetWorth();
+        
+        // Clear form
+        document.getElementById('netWorthForm').reset();
+      } catch (error) {
+        console.error('Error saving net worth:', error);
+        showError('Failed to save net worth. ' + error.message);
+      }
+    }
+    
+    function addAsset() {
+      const name = document.getElementById('assetName').value.trim();
+      const amount = parseFloat(document.getElementById('assetAmount').value);
+      
+      if (!name || isNaN(amount) || amount < 0) {
+        showError('Please enter a valid asset name and amount.');
+        return;
+      }
+      
+      assets.push({ name, amount });
+      updateNetWorthDisplay();
+      
+      // Clear form
+      document.getElementById('assetName').value = '';
+      document.getElementById('assetAmount').value = '';
+      
+      showSuccess('Asset added!');
+    }
+    
+    function removeAsset(index) {
+      if (confirm('Remove this asset?')) {
+        assets.splice(index, 1);
+        updateNetWorthDisplay();
+        showSuccess('Asset removed!');
+      }
+    }
+    
+    function addLiability() {
+      const name = document.getElementById('liabilityName').value.trim();
+      const amount = parseFloat(document.getElementById('liabilityAmount').value);
+      
+      if (!name || isNaN(amount) || amount < 0) {
+        showError('Please enter a valid liability name and amount.');
+        return;
+      }
+      
+      liabilities.push({ name, amount });
+      updateNetWorthDisplay();
+      
+      // Clear form
+      document.getElementById('liabilityName').value = '';
+      document.getElementById('liabilityAmount').value = '';
+      
+      showSuccess('Liability added!');
+    }
+    
+    function removeLiability(index) {
+      if (confirm('Remove this liability?')) {
+        liabilities.splice(index, 1);
+        updateNetWorthDisplay();
+        showSuccess('Liability removed!');
+      }
+    }
+    
+    function updateNetWorthDisplay() {
+      const assetsTotal = assets.reduce((sum, asset) => sum + (asset.amount || 0), 0);
+      const liabilitiesTotal = liabilities.reduce((sum, liability) => sum + (liability.amount || 0), 0);
+      
+      // Also include saved net worth totals if available
+      const savedAssets = currentNetWorth?.assets || 0;
+      const savedLiabilities = currentNetWorth?.liabilities || 0;
+      
+      const finalAssets = assetsTotal > 0 ? assetsTotal : savedAssets;
+      const finalLiabilities = liabilitiesTotal > 0 ? liabilitiesTotal : savedLiabilities;
+      
+      displayNetWorth(finalAssets, finalLiabilities);
+      
+      // Save automatically when line items are added
+      if (assetsTotal > 0 || liabilitiesTotal > 0) {
+        window.DataService.saveNetWorth({ assets: finalAssets, liabilities: finalLiabilities }).catch(err => {
+          console.warn('Auto-save failed:', err);
+        });
+      }
+    }
+    
+    function showError(message) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+    
+    function showSuccess(message) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div class="success-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => container.innerHTML = '', 3000);
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
