@@ -270,6 +270,78 @@ let lastAuthState = null;
 let authStateChangeCount = 0;
 let isProcessingAuthState = false; // Flag to prevent concurrent processing
 let pageLoadTime = Date.now(); // Track when page was loaded
+let isNavigatingBack = false; // Flag to track back/forward navigation
+
+// Detect if page was loaded via back/forward button
+function isBackForwardNavigation() {
+  // Check performance navigation API
+  if (window.performance && window.performance.navigation) {
+    return window.performance.navigation.type === 2; // TYPE_BACK_FORWARD = 2
+  }
+  // Check PerformanceNavigationTiming API (newer)
+  if (window.performance && window.performance.getEntriesByType) {
+    const navEntries = window.performance.getEntriesByType('navigation');
+    if (navEntries.length > 0) {
+      return navEntries[0].type === 'back_forward';
+    }
+  }
+  // Check if page was restored from bfcache
+  if (window.performance && window.performance.getEntriesByType) {
+    const entries = window.performance.getEntriesByType('navigation');
+    if (entries.length > 0 && entries[0].transferSize === 0 && entries[0].decodedBodySize > 0) {
+      return true; // Likely from cache/bfcache
+    }
+  }
+  return false;
+}
+
+// Track navigation history to detect back/forward navigation
+let navigationHistory = [];
+const MAX_HISTORY = 10;
+
+// NOTE: Popstate handler is now in /utils/backButtonHandler.js to avoid conflicts
+// This handler is removed to prevent duplicate event listeners
+// The global backButtonHandler.js handles all back button navigation
+// We only set the flag here for onAuthStateChanged to respect back navigation
+if (typeof window !== 'undefined') {
+  window.addEventListener('popstate', (event) => {
+    // Just set the flag - let backButtonHandler.js handle the redirect
+    isNavigatingBack = true;
+    sessionStorage.setItem('is-navigating-back', 'true');
+    console.log('[Auth] Popstate detected - flagging for backButtonHandler.js');
+    
+    // Reset flag after delay
+    setTimeout(() => {
+      isNavigatingBack = false;
+      sessionStorage.removeItem('is-navigating-back');
+    }, 3000);
+  });
+}
+
+// Track navigation to detect back button usage
+if (typeof window !== 'undefined') {
+  // Store current page on load
+  const currentPath = window.location.pathname;
+  const lastPath = sessionStorage.getItem('last-navigation-path');
+  const lastNavTime = parseInt(sessionStorage.getItem('last-navigation-time') || '0');
+  const now = Date.now();
+  
+  // If we loaded quickly and path is different, might be back navigation
+  if (lastPath && lastPath !== currentPath && (now - lastNavTime) < 1000) {
+    // Could be back navigation - don't redirect for a bit
+    sessionStorage.setItem('is-navigating-back', 'true');
+    isNavigatingBack = true;
+    console.log('[Auth] Possible back navigation detected - path changed quickly');
+    setTimeout(() => {
+      sessionStorage.removeItem('is-navigating-back');
+      isNavigatingBack = false;
+    }, 3000);
+  }
+  
+  // Update last navigation path
+  sessionStorage.setItem('last-navigation-path', currentPath);
+  sessionStorage.setItem('last-navigation-time', now.toString());
+}
 
 // Authentication state observer with debouncing
 auth.onAuthStateChanged(async user => {
@@ -321,6 +393,26 @@ auth.onAuthStateChanged(async user => {
       return; // Already processed
     }
     
+    // CRITICAL: Don't redirect if this is a back/forward navigation
+    // This prevents the back button from triggering unwanted redirects
+    const isNavigatingBackCheck = isNavigatingBack || 
+                                  isBackForwardNavigation() || 
+                                  sessionStorage.getItem('is-navigating-back') === 'true';
+    
+    if (isNavigatingBackCheck) {
+      console.log('[Auth] Back/forward navigation detected, skipping redirects to preserve browser history');
+      authStateChangeTimeout = null;
+      isProcessingAuthState = false;
+      // Still update the user state, just don't redirect
+      lastAuthState = currentUserId;
+      currentUser = user;
+      if (user) {
+        startSessionTimer();
+        updateUIForLoggedInUser(user);
+      }
+      return;
+    }
+    
     isProcessingAuthState = true;
     lastAuthState = currentUserId;
     currentUser = user;
@@ -346,6 +438,8 @@ auth.onAuthStateChanged(async user => {
     
     if (user) {
       authStateResolved = true;
+      // Store user email in sessionStorage for backButtonHandler.js
+      sessionStorage.setItem('user-email', user.email);
       console.log('[Auth] User signed in:', user.email, 'Verified:', user.emailVerified);
       
       // Check if email is verified
@@ -439,7 +533,24 @@ auth.onAuthStateChanged(async user => {
         // CRITICAL: Never redirect if already on index.html - this prevents refresh loops
         if (isIndexPage && user) {
           // Authenticated user on landing page - redirect to dashboard
+          // BUT: Don't redirect if this is a back/forward navigation
+          const isNavigatingBackCheck = isNavigatingBack || 
+                                        isBackForwardNavigation() || 
+                                        sessionStorage.getItem('is-navigating-back') === 'true';
+          
+          if (isNavigatingBackCheck) {
+            // If navigating back to index.html, redirect to dashboard and replace history
+            // This ensures back button goes to dashboard, not index.html
+            console.log('[Auth] Back navigation to index.html detected, redirecting to dashboard and replacing history');
+            history.replaceState(null, '', '/dashboard.html');
+            window.location.replace(window.location.origin + '/dashboard.html');
+            authStateChangeTimeout = null;
+            isProcessingAuthState = false;
+            return;
+          }
           console.log('[Auth] Authenticated user on landing page, redirecting to dashboard');
+          // Replace history so index.html isn't in the back button history
+          history.replaceState(null, '', '/dashboard.html');
           setTimeout(() => {
             window.location.replace(window.location.origin + '/dashboard.html');
           }, 300);
@@ -498,10 +609,10 @@ auth.onAuthStateChanged(async user => {
           // Use a small delay to prevent immediate redirect loops
           setTimeout(() => {
             try {
-              window.location.replace(redirectPath);
+              window.location.href = redirectPath; // Use href instead of replace to preserve browser history
             } catch (error) {
               console.error('[Auth] Redirect error:', error);
-              window.location.replace(window.location.origin + '/index.html');
+              window.location.href = window.location.origin + '/index.html';
             }
           }, 500); // Increased delay to 500ms
         } else {
@@ -535,14 +646,29 @@ auth.onAuthStateChanged(async user => {
       try {
         const userRef = doc(db, 'users', user.uid);
         const docSnap = await getDoc(userRef);
+        const updateData = { 
+          lastLogin: new Date().toISOString(),
+          email: user.email
+        };
+        
         if (!docSnap.exists()) {
+          // New user - set joined and lastLogin
           await setDoc(userRef, { 
             email: user.email, 
             joined: new Date().toISOString(),
             lastLogin: new Date().toISOString()
           });
+          console.log('[Auth] Created user document in Firestore with joined date');
         } else {
-          await updateDoc(userRef, { lastLogin: new Date().toISOString() });
+          // Existing user - update lastLogin and ensure joined exists
+          const existingData = docSnap.data();
+          if (!existingData.joined) {
+            // Backfill joined date for existing users
+            updateData.joined = new Date().toISOString();
+            console.log('[Auth] Backfilling joined date for existing user');
+          }
+          await updateDoc(userRef, updateData);
+          console.log('[Auth] Updated user document in Firestore with lastLogin');
         }
       } catch (error) {
         console.error('[Auth] Error updating user data:', error);
@@ -574,6 +700,9 @@ auth.onAuthStateChanged(async user => {
         return;
       }
       console.log('[Auth] User signed out or no user present');
+      
+      // Clear stored user email
+      sessionStorage.removeItem('user-email');
       
       // Update UI for logged out user
       document.querySelectorAll('.auth-required').forEach(element => {
@@ -652,7 +781,7 @@ auth.onAuthStateChanged(async user => {
             sessionStorage.setItem('reload-history', JSON.stringify(history));
             
             setTimeout(() => {
-              window.location.replace(loginPath);
+              window.location.href = loginPath; // Use href instead of replace to preserve browser history
             }, 500);
           }
         } else {
@@ -662,8 +791,25 @@ auth.onAuthStateChanged(async user => {
         }
       } else if (isIndexPage) {
         // On index.html (landing page) - redirect authenticated users to dashboard
+        // BUT: Don't redirect if this is a back/forward navigation
         if (user) {
+          const isNavigatingBackCheck = isNavigatingBack || 
+                                        isBackForwardNavigation() || 
+                                        sessionStorage.getItem('is-navigating-back') === 'true';
+          
+          if (isNavigatingBackCheck) {
+            // If navigating back to index.html, redirect to dashboard and replace history
+            // This ensures back button goes to dashboard, not index.html
+            console.log('[Auth] Back navigation to index.html detected, redirecting to dashboard and replacing history');
+            history.replaceState(null, '', '/dashboard.html');
+            window.location.replace(window.location.origin + '/dashboard.html');
+            authStateChangeTimeout = null;
+            isProcessingAuthState = false;
+            return;
+          }
           console.log('[Auth] Authenticated user on landing page, redirecting to dashboard');
+          // Replace history so index.html isn't in the back button history
+          history.replaceState(null, '', '/dashboard.html');
           setTimeout(() => {
             window.location.replace(window.location.origin + '/dashboard.html');
           }, 300);

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="src/styles/auth/login.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="/config.js"></script>
+  <script src="/utils/themeManager.js"></script>
   <script src="/utils/validation.js"></script>
   <script src="/utils/errorHandler.js"></script>
   <meta name="mobile-web-app-capable" content="yes">
@@ -16,6 +17,72 @@
   <meta name="apple-mobile-web-app-title" content="VB Toolkit">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <style>
+    /* Theme CSS Variables */
+    [data-theme="blue"] {
+      --primary-color: #007bff;
+      --primary-hover: #0056b3;
+      --text-color: #1e293b;
+      --heading-color: #0f172a;
+    }
+    
+    [data-theme="pink"] {
+      --primary-color: #ff4b91;
+      --primary-hover: #e6397a;
+      --text-color: #d91a72;
+      --heading-color: #be185d;
+    }
+    
+    [data-theme="green"] {
+      --primary-color: #28a745;
+      --primary-hover: #218838;
+      --text-color: #14532d;
+      --heading-color: #052e16;
+    }
+    
+    [data-theme="purple"] {
+      --primary-color: #6f42c1;
+      --primary-hover: #5a32a3;
+      --text-color: #581c87;
+      --heading-color: #3b0764;
+    }
+    
+    [data-theme="orange"] {
+      --primary-color: #fd7e14;
+      --primary-hover: #e66a00;
+      --text-color: #7c2d12;
+      --heading-color: #431407;
+    }
+    
+    [data-theme="teal"] {
+      --primary-color: #20c997;
+      --primary-hover: #17a085;
+      --text-color: #134e4a;
+      --heading-color: #042f2e;
+    }
+    
+    [data-theme="red"] {
+      --primary-color: #dc3545;
+      --primary-hover: #c82333;
+      --text-color: #7f1d1d;
+      --heading-color: #450a0a;
+    }
+    
+    [data-theme="blue-dark"] {
+      --primary-color: #007bff;
+      --primary-hover: #0056b3;
+      --text-color: #f1f5f9;
+      --heading-color: #ffffff;
+    }
+    
+    /* Global Text Color Application */
+    h1, h2, h3, h4, h5, h6 {
+      color: var(--heading-color, var(--text-color, #1e293b));
+    }
+    
+    p, span, div, li, td, th, label {
+      color: var(--text-color, #1e293b);
+    }
+    
     body {
       font-family: 'Poppins', sans-serif;
       background: linear-gradient(135deg, rgba(17, 24, 39, 0.88), rgba(37, 99, 235, 0.75)),
@@ -25,7 +92,7 @@
       align-items: center;
       min-height: 100vh;
       margin: 0;
-      color: #1e293b;
+      color: var(--text-color, #1e293b);
     }
 
     .login-container {
@@ -65,7 +132,7 @@
     }
 
     input:focus {
-      border-color: #2563eb;
+      border-color: var(--primary-color, #2563eb);
       outline: none;
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
@@ -83,17 +150,17 @@
     }
 
     .login-btn {
-      background: #2563eb;
+      background: var(--primary-color, #2563eb);
       color: white;
     }
 
     .login-btn:hover {
-      background: #1d4ed8;
+      background: var(--primary-hover, #1d4ed8);
     }
 
     .google-btn {
       background: white;
-      color: #1e293b;
+      color: var(--text-color, #1e293b);
       border: 1px solid #e2e8f0;
       display: flex;
       align-items: center;
@@ -115,7 +182,8 @@
       align-items: center;
       gap: 0.5rem;
       margin: 1rem 0;
-      color: #64748b;
+      color: var(--text-color, #64748b);
+      opacity: 0.8;
       font-size: 0.875rem;
     }
 
@@ -132,7 +200,7 @@
     }
 
     a {
-      color: #2563eb;
+      color: var(--primary-color, #2563eb);
       text-decoration: none;
       font-size: 0.875rem;
       font-weight: 500;
@@ -156,12 +224,12 @@
 
     .session-timeout button {
       margin-top: 0.5rem;
-      background: #2563eb;
+      background: var(--primary-color, #2563eb);
       color: white;
     }
 
     .session-timeout button:hover {
-      background: #1d4ed8;
+      background: var(--primary-hover, #1d4ed8);
     }
 
     @media (max-width: 640px) {
@@ -383,11 +451,11 @@
           // Redirect with flag still set - auth.js will respect it
           setTimeout(() => {
             try {
-              window.location.replace(redirectPath);
+              window.location.href = redirectPath; // Use href instead of replace to preserve browser history
             } catch (error) {
               console.error('[Login] Redirect error:', error);
               // Fallback to absolute path
-              window.location.replace(window.location.origin + '/dashboard.html');
+              window.location.href = window.location.origin + '/dashboard.html';
             }
           }, 500);
         }
@@ -436,8 +504,22 @@
 
     function googleLogin() {
       const provider = new GoogleAuthProvider();
+      
+      // Add additional OAuth scopes if needed
+      provider.addScope('profile');
+      provider.addScope('email');
+      
+      // Set custom parameters
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
+      console.log('[Login] Starting Google sign-in popup...');
+      
       signInWithPopup(auth, provider)
-        .then(() => {
+        .then((result) => {
+          console.log('[Login] Google sign-in successful:', result.user.email);
+          
           // Reset login attempts on successful Google login
           loginAttempts = 0;
           localStorage.removeItem('loginAttempts');
@@ -448,6 +530,11 @@
           sessionStorage.removeItem('auth-redirect-done');
           sessionStorage.setItem('last-auth-redirect-time', Date.now().toString());
           
+          // Store user email in sessionStorage for backButtonHandler.js
+          if (result.user && result.user.email) {
+            sessionStorage.setItem('user-email', result.user.email);
+          }
+          
           // Redirect directly to dashboard after successful Google login
           const redirectPath = '/dashboard.html';
           
@@ -456,20 +543,38 @@
           // Wait a bit to ensure auth state is set
           setTimeout(() => {
             try {
-              window.location.replace(redirectPath);
+              window.location.href = redirectPath; // Use href instead of replace to preserve browser history
             } catch (error) {
               console.error('[Login] Google redirect error:', error);
-              window.location.replace(window.location.origin + '/dashboard.html');
+              window.location.href = window.location.origin + '/dashboard.html';
             }
           }, 500);
         })
         .catch(error => {
+          console.error('[Login] Google sign-in error:', error.code, error.message);
+          
           const errorElement = document.getElementById("error");
           if (errorElement) {
+            let errorMessage = 'Google login failed';
+            
+            // Handle specific error codes
+            if (error.code === 'auth/popup-closed-by-user') {
+              errorMessage = 'Sign-in popup was closed. Please try again.';
+            } else if (error.code === 'auth/popup-blocked') {
+              errorMessage = 'Popup was blocked by your browser. Please allow popups for this site and try again.';
+            } else if (error.code === 'auth/cancelled-popup-request') {
+              errorMessage = 'Only one popup request is allowed at a time. Please wait and try again.';
+            } else if (error.code === 'auth/unauthorized-domain') {
+              errorMessage = 'This domain is not authorized for Google sign-in. Please contact support.';
+            } else if (error.message) {
+              errorMessage = error.message;
+            }
+            
             if (typeof ErrorHandler !== 'undefined' && ErrorHandler.handleFirebaseError) {
               ErrorHandler.handleFirebaseError(error);
             } else {
-              errorElement.innerText = error.message || 'Google login failed';
+              errorElement.innerText = errorMessage;
+              errorElement.style.display = 'block';
             }
           }
         });

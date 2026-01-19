@@ -9,6 +9,7 @@
   <meta name="theme-color" content="#007bff">
   
   <script src="/config.js"></script>
+  <script src="/utils/backButtonHandler.js"></script>
   <script type="module" src="/firebase-config.js"></script>
   <script src="/utils/validation.js"></script>
   <script src="/utils/errorHandler.js"></script>
@@ -19,19 +20,86 @@
   <script type="module" src="/auth.js"></script>
   
   <style>
+    /* Theme CSS Variables */
+    [data-theme="blue"] {
+      --primary-color: #007bff;
+      --primary-hover: #0056b3;
+      --text-color: #1e293b;
+      --heading-color: #0f172a;
+    }
+    
+    [data-theme="pink"] {
+      --primary-color: #ff4b91;
+      --primary-hover: #e6397a;
+      --text-color: #d91a72;
+      --heading-color: #be185d;
+    }
+    
+    [data-theme="green"] {
+      --primary-color: #28a745;
+      --primary-hover: #218838;
+      --text-color: #14532d;
+      --heading-color: #052e16;
+    }
+    
+    [data-theme="purple"] {
+      --primary-color: #6f42c1;
+      --primary-hover: #5a32a3;
+      --text-color: #581c87;
+      --heading-color: #3b0764;
+    }
+    
+    [data-theme="orange"] {
+      --primary-color: #fd7e14;
+      --primary-hover: #e66a00;
+      --text-color: #7c2d12;
+      --heading-color: #431407;
+    }
+    
+    [data-theme="teal"] {
+      --primary-color: #20c997;
+      --primary-hover: #17a085;
+      --text-color: #134e4a;
+      --heading-color: #042f2e;
+    }
+    
+    [data-theme="red"] {
+      --primary-color: #dc3545;
+      --primary-hover: #c82333;
+      --text-color: #7f1d1d;
+      --heading-color: #450a0a;
+    }
+    
+    [data-theme="blue-dark"] {
+      --primary-color: #007bff;
+      --primary-hover: #0056b3;
+      --border-color: #404040;
+      --text-color: #f1f5f9;
+      --heading-color: #ffffff;
+    }
+    
+    /* Global Text Color Application */
+    h1, h2, h3, h4, h5, h6 {
+      color: var(--heading-color, var(--text-color, #1e293b));
+    }
+    
+    p, span, div, li, td, th, label {
+      color: var(--text-color, #1e293b);
+    }
+    
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; min-height: 100vh; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: var(--text-color, #1e293b); line-height: 1.6; min-height: 100vh; }
     .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
     .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; gap: 1rem; }
     .page-title { display: flex; align-items: center; gap: 1rem; }
-    .page-title h1 { font-size: 2rem; font-weight: 700; color: #1e293b; }
-    .back-btn { background: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
-    .back-btn:hover { background: #0056b3; }
+    .page-title h1 { font-size: 2rem; font-weight: 700; color: var(--heading-color, var(--text-color, #1e293b)); }
+    .back-btn { background: var(--primary-color, #007bff); color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .back-btn:hover { background: var(--primary-hover, #0056b3); }
     .content-area { background: white; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
     .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .btn-primary { background: #007bff; color: white; }
-    .btn-primary:hover { background: #0056b3; }
+    .btn-primary { background: var(--primary-color, #007bff); color: white; }
+    .btn-primary:hover { background: var(--primary-hover, #0056b3); }
     .btn-danger { background: #dc3545; color: white; }
     .btn-danger:hover { background: #c82333; }
     .btn-secondary { background: #6c757d; color: white; }
@@ -42,21 +110,21 @@
     .summary-card .value { font-size: 2rem; font-weight: 700; }
     .debts-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
     .debts-table th, .debts-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
-    .debts-table th { background: #f8fafc; font-weight: 600; color: #475569; }
+    .debts-table th { background: #f8fafc; font-weight: 600; color: var(--text-color, #475569); opacity: 0.8; }
     .debts-table tr:hover { background: #f8fafc; }
-    .empty-state { text-align: center; padding: 3rem 1rem; color: #64748b; }
-    .empty-state h3 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #1e293b; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-color, #64748b); opacity: 0.8; }
+    .empty-state h3 { font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--heading-color, var(--text-color, #1e293b)); }
     .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
     .modal.active { display: flex; align-items: center; justify-content: center; }
     .modal-content { background: white; padding: 2rem; border-radius: 0.75rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .modal-header h2 { font-size: 1.5rem; color: #1e293b; }
-    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; }
-    .close-btn:hover { color: #1e293b; }
+    .modal-header h2 { font-size: 1.5rem; color: var(--heading-color, var(--text-color, #1e293b)); }
+    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-color, #64748b); opacity: 0.8; }
+    .close-btn:hover { color: var(--text-color, #1e293b); }
     .form-group { margin-bottom: 1.5rem; }
-    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-color, #1e293b); }
     .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; }
-    .form-group input:focus, .form-group select:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary-color, #007bff); box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
     .form-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; }
     .error-message { background: #fee; color: #c33; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
     .success-message { background: #efe; color: #3c3; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
@@ -75,12 +143,12 @@
         <span style="font-size: 2rem;">📋</span>
         <h1>Debt Tracker</h1>
       </div>
-      <a href="/index.html" class="back-btn">← Back to Home</a>
+      <a href="/dashboard.html" class="back-btn">← Back to Home</a>
     </div>
     
     <div class="content-area">
       <div class="action-bar">
-        <h2 style="font-size: 1.5rem; color: #1e293b;">Your Debts</h2>
+        <h2 style="font-size: 1.5rem; color: var(--heading-color, var(--text-color, #1e293b));">Your Debts</h2>
         <button class="btn btn-primary" onclick="openAddDebtModal()">+ Add Debt</button>
       </div>
       

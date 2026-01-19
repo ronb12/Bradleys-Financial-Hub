@@ -48,6 +48,8 @@
   
   <!-- Config and utilities -->
   <script src="/config.js"></script>
+  <!-- Global back button handler -->
+  <script src="/utils/backButtonHandler.js"></script>
   <!-- local-test-data.js is loaded conditionally by config.js (localhost only) -->
   <!-- Track navigation start time to prevent auth.js from blocking navigation -->
   <script>
@@ -394,29 +396,29 @@
           <div class="profile-metric-card">
             <div class="metric-icon">💰</div>
             <div class="metric-content">
-              <span class="metric-label">Net Worth</span>
-              <span class="metric-value" id="profileNetWorth">-</span>
-            </div>
+          <span class="metric-label">Net Worth</span>
+          <span class="metric-value" id="profileNetWorth">-</span>
+        </div>
           </div>
           <div class="profile-metric-card">
             <div class="metric-icon">💳</div>
             <div class="metric-content">
-              <span class="metric-label">Credit Utilization</span>
-              <span class="metric-value" id="profileCreditUtilization">-</span>
-            </div>
+          <span class="metric-label">Credit Utilization</span>
+          <span class="metric-value" id="profileCreditUtilization">-</span>
+        </div>
           </div>
           <div class="profile-metric-card">
             <div class="metric-icon">📉</div>
             <div class="metric-content">
-              <span class="metric-label">Total Debt</span>
-              <span class="metric-value" id="profileTotalDebt">-</span>
-            </div>
+          <span class="metric-label">Total Debt</span>
+          <span class="metric-value" id="profileTotalDebt">-</span>
+        </div>
           </div>
           <div class="profile-metric-card">
             <div class="metric-icon">🎯</div>
             <div class="metric-content">
-              <span class="metric-label">Savings Progress</span>
-              <span class="metric-value" id="profileSavings">-</span>
+          <span class="metric-label">Savings Progress</span>
+          <span class="metric-value" id="profileSavings">-</span>
             </div>
           </div>
         </div>
@@ -487,10 +489,10 @@
                 <!-- Theme options will be populated by JavaScript -->
               </div>
             </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      
+          
       <!-- Action Buttons Section -->
       <div class="profile-actions-section">
         <button class="action-btn advanced-btn" onclick="openAdvancedSettings()" id="advancedSettingsBtn">
@@ -612,9 +614,9 @@
               <span class="stat-label">Cache Size</span>
               <span class="stat-value" id="statsCacheSize">-</span>
             </div>
-          </div>
         </div>
-
+      </div>
+      
         <!-- Privacy Section -->
         <div class="advanced-section">
           <h3 class="section-title">🔒 Privacy & Security</h3>
@@ -625,14 +627,14 @@
                 <span class="action-title">Request Data Deletion</span>
                 <span class="action-desc">Permanently delete all your account data</span>
               </div>
-            </button>
+        </button>
             <button class="advanced-action-btn privacy-btn" onclick="downloadPrivacyReport()">
               <span class="action-icon">📋</span>
               <div class="action-content">
                 <span class="action-title">Download Privacy Report</span>
                 <span class="action-desc">View what data is stored about you</span>
               </div>
-            </button>
+        </button>
           </div>
         </div>
       </div>
@@ -658,8 +660,8 @@
     [data-theme="pink"] {
       --primary-color: #ff4b91;
       --primary-hover: #e6397a;
-      --text-color: #831843;
-      --heading-color: #500724;
+      --text-color: #d91a72;
+      --heading-color: #be185d;
     }
     
     [data-theme="green"] {
@@ -1043,7 +1045,8 @@
       height: 36px;
       border-radius: 50%;
       font-size: 1.5rem;
-      color: #64748b;
+      color: var(--text-color, #64748b);
+      opacity: 0.8;
       cursor: pointer;
       transition: all 0.2s ease;
       display: flex;
@@ -1118,13 +1121,14 @@
       margin: 0 0 0.5rem 0;
       font-size: 1.5rem;
       font-weight: 700;
-      color: #0f172a;
+      color: var(--heading-color, var(--text-color, #0f172a));
       line-height: 1.2;
     }
 
     .profile-email {
       margin: 0;
-      color: #64748b;
+      color: var(--text-color, #64748b);
+      opacity: 0.9;
       font-size: 0.95rem;
       word-break: break-word;
     }
@@ -1150,7 +1154,7 @@
       margin: 0 0 1rem 0;
       font-size: 1.1rem;
       font-weight: 700;
-      color: #1e293b;
+      color: var(--heading-color, var(--text-color, #1e293b));
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -1207,7 +1211,7 @@
     .metric-value {
       font-size: 1.1rem;
       font-weight: 700;
-      color: #0f172a;
+      color: var(--heading-color, var(--text-color, #0f172a));
       line-height: 1.2;
       word-break: break-word;
     }
@@ -3046,24 +3050,36 @@
     // Load profile data
     async function loadProfileData() {
       try {
-        // Load user info
+        // Load user info - try multiple sources
+        let user = null;
+        let userEmail = null;
+        
+        // First try window.auth.currentUser
         if (window.auth && window.auth.currentUser) {
-          const user = window.auth.currentUser;
-          const nameEl = document.getElementById('profileName');
-          const emailEl = document.getElementById('profileEmail');
-          
+          user = window.auth.currentUser;
+          userEmail = user.email;
+        } else {
+          // Fallback: check sessionStorage
+          userEmail = sessionStorage.getItem('user-email');
+        }
+        
+        const nameEl = document.getElementById('profileName');
+        const emailEl = document.getElementById('profileEmail');
+        
+        if (userEmail) {
           if (nameEl) {
-            nameEl.textContent = user.displayName || user.email?.split('@')[0] || 'User';
+            const displayName = user?.displayName || userEmail.split('@')[0] || 'User';
+            nameEl.textContent = displayName;
           }
           if (emailEl) {
-            emailEl.textContent = user.email || 'Email';
+            emailEl.textContent = userEmail;
           }
+          console.log('[Profile] Loaded user email:', userEmail);
         } else {
           // Set default values if not authenticated
-          const nameEl = document.getElementById('profileName');
-          const emailEl = document.getElementById('profileEmail');
           if (nameEl) nameEl.textContent = 'User';
           if (emailEl) emailEl.textContent = 'Email';
+          console.warn('[Profile] No user email found');
         }
         
         // Load profile metrics if DataService is available
@@ -3125,7 +3141,10 @@
       if (modal) {
         modal.style.display = 'flex';
         // Load profile data and initialize theme selector
-        loadProfileData();
+        // Wait a bit for auth to be ready if needed
+        setTimeout(() => {
+          loadProfileData();
+        }, 100);
         setTimeout(() => {
           initializeThemeSelector();
         }, 200);
@@ -3177,7 +3196,10 @@
       const modal = document.getElementById('advancedSettingsModal');
       if (modal) {
         modal.style.display = 'flex';
-        loadAdvancedSettingsData();
+        // Wait a bit for auth to be ready if needed
+        setTimeout(() => {
+          loadAdvancedSettingsData();
+        }, 100);
       }
     }
 
@@ -3190,38 +3212,102 @@
 
     async function loadAdvancedSettingsData() {
       try {
-        // Load account information
+        // Load account information - try multiple sources
+        let user = null;
+        let userEmail = null;
+        let userId = null;
+        
+        // First try window.auth.currentUser - wait a bit if not ready
+        if (!window.auth || !window.auth.currentUser) {
+          // Wait for auth to be ready
+          let attempts = 0;
+          while (attempts < 10 && (!window.auth || !window.auth.currentUser)) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+          }
+        }
+        
         if (window.auth && window.auth.currentUser) {
-          const user = window.auth.currentUser;
-          const userIdEl = document.getElementById('advancedUserId');
-          const emailEl = document.getElementById('advancedUserEmail');
-          
-          if (userIdEl) userIdEl.textContent = user.uid.substring(0, 20) + '...';
-          if (emailEl) emailEl.textContent = user.email || 'N/A';
-
-          // Load user document for member since and last login
-          if (window.db) {
-            try {
-              const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
-              const userRef = doc(window.db, 'users', user.uid);
-              const userDoc = await getDoc(userRef);
-              
-              if (userDoc.exists()) {
-                const data = userDoc.data();
-                const memberSinceEl = document.getElementById('advancedMemberSince');
-                const lastLoginEl = document.getElementById('advancedLastLogin');
-                
-                if (memberSinceEl && data.joined) {
-                  memberSinceEl.textContent = new Date(data.joined).toLocaleDateString();
-                }
-                if (lastLoginEl && data.lastLogin) {
-                  lastLoginEl.textContent = new Date(data.lastLogin).toLocaleDateString();
+          user = window.auth.currentUser;
+          userEmail = user.email;
+          userId = user.uid;
+        } else {
+          // Fallback: check sessionStorage for email
+          userEmail = sessionStorage.getItem('user-email');
+        }
+        
+        const userIdEl = document.getElementById('advancedUserId');
+        const emailEl = document.getElementById('advancedUserEmail');
+        
+        // Always show User ID if we have auth.currentUser, even if we need to wait
+        if (userIdEl) {
+          if (userId) {
+            // Show full User ID (first 20 chars + ...) or allow full display
+            userIdEl.textContent = userId.length > 20 ? userId.substring(0, 20) + '...' : userId;
+          } else {
+            // Try one more time to get user ID after a short delay
+            setTimeout(async () => {
+              if (window.auth && window.auth.currentUser) {
+                const finalUserId = window.auth.currentUser.uid;
+                if (userIdEl && finalUserId) {
+                  userIdEl.textContent = finalUserId.length > 20 ? finalUserId.substring(0, 20) + '...' : finalUserId;
                 }
               }
-            } catch (e) {
-              console.error('[Advanced Settings] Error loading user data:', e);
-            }
+            }, 200);
+            userIdEl.textContent = 'Loading...';
           }
+        }
+        
+        if (emailEl) {
+          emailEl.textContent = userEmail || 'N/A';
+        }
+        
+        console.log('[Advanced Settings] Loading user data - email:', userEmail, 'uid:', userId);
+
+        // Load user document for member since and last login
+        if (window.db && userId) {
+          try {
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+            const userRef = doc(window.db, 'users', userId);
+            const userDoc = await getDoc(userRef);
+            
+            if (userDoc.exists()) {
+              const data = userDoc.data();
+              const memberSinceEl = document.getElementById('advancedMemberSince');
+              const lastLoginEl = document.getElementById('advancedLastLogin');
+              
+              if (memberSinceEl && data.joined) {
+                memberSinceEl.textContent = new Date(data.joined).toLocaleDateString();
+              } else if (memberSinceEl && !data.joined) {
+                memberSinceEl.textContent = 'N/A';
+              }
+              
+              if (lastLoginEl && data.lastLogin) {
+                lastLoginEl.textContent = new Date(data.lastLogin).toLocaleDateString();
+              } else if (lastLoginEl && !data.lastLogin) {
+                lastLoginEl.textContent = 'N/A';
+              }
+            } else {
+              // Document doesn't exist - set defaults
+              const memberSinceEl = document.getElementById('advancedMemberSince');
+              const lastLoginEl = document.getElementById('advancedLastLogin');
+              if (memberSinceEl) memberSinceEl.textContent = 'N/A';
+              if (lastLoginEl) lastLoginEl.textContent = 'N/A';
+            }
+          } catch (e) {
+            console.error('[Advanced Settings] Error loading user data:', e);
+            // Set defaults on error
+            const memberSinceEl = document.getElementById('advancedMemberSince');
+            const lastLoginEl = document.getElementById('advancedLastLogin');
+            if (memberSinceEl) memberSinceEl.textContent = 'N/A';
+            if (lastLoginEl) lastLoginEl.textContent = 'N/A';
+          }
+        } else if (!userId) {
+          // No userId available - set defaults
+          const memberSinceEl = document.getElementById('advancedMemberSince');
+          const lastLoginEl = document.getElementById('advancedLastLogin');
+          if (memberSinceEl) memberSinceEl.textContent = 'N/A';
+          if (lastLoginEl) lastLoginEl.textContent = 'N/A';
         }
 
         // Load statistics
@@ -3528,7 +3614,7 @@
         });
       }
     }
-
+    
     // Make functions globally available immediately
     window.openProfileModal = openProfileModal;
     window.closeProfileModal = closeProfileModal;
@@ -3605,7 +3691,10 @@
         
         // Check if user is authenticated - only load data if authenticated
         // DataService will throw errors if user is not authenticated, so catch those
-        const isAuthenticated = window.auth && window.auth.currentUser;
+        // Check multiple sources for authentication
+        const hasAuthUser = window.auth && window.auth.currentUser;
+        const hasStoredEmail = sessionStorage.getItem('user-email');
+        const isAuthenticated = hasAuthUser || hasStoredEmail;
         
         // Only load data if user is authenticated
         if (!isAuthenticated) {
@@ -3683,6 +3772,78 @@
       if (element) {
         element.innerHTML = value;
       }
+    }
+    
+    // Financial Tips Navigation
+    const tips = [
+      { category: 'Budgeting', title: 'The 50/30/20 Rule', content: 'Allocate 50% of your income to needs, 30% to wants, and 20% to savings and debt repayment. This simple framework helps maintain financial balance.' },
+      { category: 'Savings', title: 'Emergency Fund First', content: 'Build an emergency fund covering 3-6 months of expenses before aggressive investing. This protects you from unexpected financial setbacks.' },
+      { category: 'Debt', title: 'Debt Snowball Method', content: 'Pay off smallest debts first to build momentum. The psychological wins motivate continued progress toward financial freedom.' },
+      { category: 'Investing', title: 'Start Early', content: 'Time is your greatest asset in investing. Starting early allows compound interest to work its magic over decades.' },
+      { category: 'Credit', title: 'Credit Utilization', content: 'Keep credit card balances below 30% of limits. Lower utilization improves credit scores and reduces interest costs.' },
+      { category: 'Budgeting', title: 'Track Every Expense', content: 'Record all spending for at least one month. Awareness of where money goes is the first step to better control.' },
+      { category: 'Savings', title: 'Automate Savings', content: 'Set up automatic transfers to savings accounts. Pay yourself first before other expenses to build wealth consistently.' },
+      { category: 'Debt', title: 'Avalanche vs Snowball', content: 'Avalanche method pays highest interest first (saves most money). Snowball pays smallest balance first (builds momentum). Choose what works for you.' },
+      { category: 'Investing', title: 'Diversification', content: 'Dont put all eggs in one basket. Spread investments across different assets to reduce risk and smooth returns over time.' },
+      { category: 'Credit', title: 'Review Credit Reports', content: 'Check credit reports annually for errors. Dispute inaccuracies that could be lowering your score unnecessarily.' },
+      { category: 'Budgeting', title: 'Zero-Based Budgeting', content: 'Give every dollar a job before the month begins. This ensures intentional spending and eliminates wasteful expenses.' },
+      { category: 'Retirement', title: 'Max Employer Match', content: 'Contribute enough to 401(k) to get full employer match. Its free money that accelerates retirement savings significantly.' }
+    ];
+    
+    let currentTipIndex = 0;
+    
+    function updateTipDisplay() {
+      const tip = tips[currentTipIndex];
+      const categoryEl = document.getElementById('tipCategory');
+      const titleEl = document.getElementById('tipTitle');
+      const contentEl = document.getElementById('tipContent');
+      const numberEl = document.getElementById('tipNumber');
+      
+      if (categoryEl) categoryEl.textContent = tip.category;
+      if (titleEl) titleEl.textContent = tip.title;
+      if (contentEl) contentEl.textContent = tip.content;
+      if (numberEl) numberEl.textContent = `${currentTipIndex + 1} of ${tips.length}`;
+      
+      // Update navigation dots
+      const dots = document.querySelectorAll('.nav-dot');
+      dots.forEach((dot, index) => {
+        if (index === currentTipIndex) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+    }
+    
+    function nextTip() {
+      currentTipIndex = (currentTipIndex + 1) % tips.length;
+      updateTipDisplay();
+    }
+    
+    function previousTip() {
+      currentTipIndex = (currentTipIndex - 1 + tips.length) % tips.length;
+      updateTipDisplay();
+    }
+    
+    function goToTip(index) {
+      if (index >= 0 && index < tips.length) {
+        currentTipIndex = index;
+        updateTipDisplay();
+      }
+    }
+    
+    // Make functions globally available
+    window.nextTip = nextTip;
+    window.previousTip = previousTip;
+    window.goToTip = goToTip;
+    
+    // Initialize tip display on load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        updateTipDisplay();
+      });
+    } else {
+      updateTipDisplay();
     }
     
     // Load stats when DOM is ready

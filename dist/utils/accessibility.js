@@ -417,10 +417,16 @@ class AccessibilityUtils {
         if (nav) nav.focus();
       }
       
-      // Alt + H: Go to home
+      // Alt + H: Go to home (dashboard for authenticated users)
       if (e.altKey && e.key === 'h') {
         e.preventDefault();
-        window.location.href = 'index.html';
+        // Check if user is authenticated - go to dashboard, otherwise index
+        const isAuthenticated = sessionStorage.getItem('user-email') || (window.auth && window.auth.currentUser);
+        if (isAuthenticated) {
+          window.location.href = '/dashboard.html';
+        } else {
+          window.location.href = '/index.html';
+        }
       }
     });
   }

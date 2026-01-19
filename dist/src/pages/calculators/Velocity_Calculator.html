@@ -9,6 +9,7 @@
   <meta name="theme-color" content="#007bff">
   
   <script src="/config.js"></script>
+  <script src="/utils/backButtonHandler.js"></script>
   <script type="module" src="/firebase-config.js"></script>
   <script src="/utils/validation.js"></script>
   <script src="/utils/errorHandler.js"></script>
@@ -18,25 +19,91 @@
   <script type="module" src="/auth.js"></script>
   
   <style>
+    /* Theme CSS Variables */
+    [data-theme="blue"] {
+      --primary-color: #007bff;
+      --primary-hover: #0056b3;
+      --text-color: #1e293b;
+      --heading-color: #0f172a;
+    }
+    
+    [data-theme="pink"] {
+      --primary-color: #ff4b91;
+      --primary-hover: #e6397a;
+      --text-color: #d91a72;
+      --heading-color: #be185d;
+    }
+    
+    [data-theme="green"] {
+      --primary-color: #28a745;
+      --primary-hover: #218838;
+      --text-color: #14532d;
+      --heading-color: #052e16;
+    }
+    
+    [data-theme="purple"] {
+      --primary-color: #6f42c1;
+      --primary-hover: #5a32a3;
+      --text-color: #581c87;
+      --heading-color: #3b0764;
+    }
+    
+    [data-theme="orange"] {
+      --primary-color: #fd7e14;
+      --primary-hover: #e66a00;
+      --text-color: #7c2d12;
+      --heading-color: #431407;
+    }
+    
+    [data-theme="teal"] {
+      --primary-color: #20c997;
+      --primary-hover: #17a085;
+      --text-color: #134e4a;
+      --heading-color: #042f2e;
+    }
+    
+    [data-theme="red"] {
+      --primary-color: #dc3545;
+      --primary-hover: #c82333;
+      --text-color: #7f1d1d;
+      --heading-color: #450a0a;
+    }
+    
+    [data-theme="blue-dark"] {
+      --primary-color: #007bff;
+      --primary-hover: #0056b3;
+      --text-color: #f1f5f9;
+      --heading-color: #ffffff;
+    }
+    
+    /* Global Text Color Application */
+    h1, h2, h3, h4, h5, h6 {
+      color: var(--heading-color, var(--text-color, #1e293b));
+    }
+    
+    p, span, div, li, td, th, label {
+      color: var(--text-color, #1e293b);
+    }
+    
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; min-height: 100vh; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: var(--text-color, #1e293b); line-height: 1.6; min-height: 100vh; }
     .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
     .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; gap: 1rem; }
     .page-title { display: flex; align-items: center; gap: 1rem; }
-    .page-title h1 { font-size: 2rem; font-weight: 700; color: #1e293b; }
-    .back-btn { background: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
-    .back-btn:hover { background: #0056b3; }
+    .page-title h1 { font-size: 2rem; font-weight: 700; color: var(--heading-color, var(--text-color, #1e293b)); }
+    .back-btn { background: var(--primary-color, #007bff); color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .back-btn:hover { background: var(--primary-hover, #0056b3); }
     .content-area { background: white; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .calc-section { margin-bottom: 2rem; }
-    .calc-section h2 { font-size: 1.5rem; margin-bottom: 1rem; color: #1e293b; }
+    .calc-section h2 { font-size: 1.5rem; margin-bottom: 1rem; color: var(--heading-color, var(--text-color, #1e293b)); }
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
     .form-group { }
-    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-color, #1e293b); }
     .form-group input { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; }
-    .form-group input:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+    .form-group input:focus { outline: none; border-color: var(--primary-color, #007bff); box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
     .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .btn-primary { background: #007bff; color: white; }
-    .btn-primary:hover { background: #0056b3; }
+    .btn-primary { background: var(--primary-color, #007bff); color: white; }
+    .btn-primary:hover { background: var(--primary-hover, #0056b3); }
     .results-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 0.75rem; margin-top: 2rem; }
     .results-card h3 { font-size: 1.25rem; margin-bottom: 1rem; opacity: 0.9; }
     .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem; }
@@ -44,8 +111,8 @@
     .result-label { font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem; }
     .result-value { font-size: 2rem; font-weight: 700; }
     .info-section { background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; margin-top: 2rem; }
-    .info-section h3 { font-size: 1.25rem; margin-bottom: 1rem; color: #1e293b; }
-    .info-section ul { list-style-position: inside; color: #64748b; }
+    .info-section h3 { font-size: 1.25rem; margin-bottom: 1rem; color: var(--heading-color, var(--text-color, #1e293b)); }
+    .info-section ul { list-style-position: inside; color: var(--text-color, #64748b); opacity: 0.8; }
     .info-section li { margin-bottom: 0.5rem; }
     .error-message { background: #fee; color: #c33; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
     .payment-table-section { margin-top: 2rem; }
@@ -60,11 +127,11 @@
       .payment-table { page-break-inside: avoid; }
       .results-card { page-break-inside: avoid; }
     }
-    .payment-table-section h3 { font-size: 1.25rem; margin-bottom: 1rem; color: #1e293b; }
+    .payment-table-section h3 { font-size: 1.25rem; margin-bottom: 1rem; color: var(--heading-color, var(--text-color, #1e293b)); }
     .payment-table-wrapper { overflow-x: auto; margin-top: 1rem; }
     .payment-table { width: 100%; border-collapse: collapse; background: white; border-radius: 0.5rem; overflow: hidden; }
-    .payment-table th { background: #f8fafc; padding: 0.75rem 0.5rem; text-align: left; font-weight: 600; color: #64748b; font-size: 0.875rem; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
-    .payment-table td { padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-size: 0.875rem; white-space: nowrap; }
+    .payment-table th { background: #f8fafc; padding: 0.75rem 0.5rem; text-align: left; font-weight: 600; color: var(--text-color, #64748b); opacity: 0.8; font-size: 0.875rem; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+    .payment-table td { padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0; color: var(--text-color, #1e293b); font-size: 0.875rem; white-space: nowrap; }
     .payment-table tr:hover { background: #f8fafc; }
     .payment-table tr:last-child td { border-bottom: none; font-weight: 600; }
     @media (max-width: 768px) {
@@ -82,13 +149,13 @@
         <span style="font-size: 2rem;">⚡</span>
         <h1>Velocity Calculator</h1>
       </div>
-      <a href="/index.html" class="back-btn">← Back to Home</a>
+      <a href="/dashboard.html" class="back-btn">← Back to Home</a>
     </div>
     
     <div class="content-area">
       <div class="calc-section">
         <h2>Calculate Your Velocity Banking Strategy</h2>
-        <p style="color: #64748b; margin-bottom: 2rem;">Velocity banking uses a line of credit to accelerate debt payoff and save on interest. Enter your financial information below to see how much you could save.</p>
+        <p style="color: var(--text-color, #64748b); opacity: 0.9; margin-bottom: 2rem;">Velocity banking uses a line of credit to accelerate debt payoff and save on interest. Enter your financial information below to see how much you could save.</p>
         
         <div id="messageContainer"></div>
         
@@ -108,14 +175,14 @@
             </div>
             <div class="form-group">
               <label for="locType">Type of Line of Credit *</label>
-              <select id="locType" required style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; background: white; color: #1e293b;">
+              <select id="locType" required style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; background: white; color: var(--text-color, #1e293b);">
                 <option value="HELOC">HELOC (Home Equity Line of Credit)</option>
                 <option value="PersonalLOC" selected>Personal Line of Credit</option>
                 <option value="CreditCard">Credit Card</option>
                 <option value="BusinessLOC">Business Line of Credit</option>
                 <option value="Other">Other</option>
               </select>
-              <small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.875rem;">Select the type of LOC you're using</small>
+              <small style="display: block; margin-top: 0.25rem; color: var(--text-color, #64748b); opacity: 0.8; font-size: 0.875rem;">Select the type of LOC you're using</small>
             </div>
             <div class="form-group">
               <label for="locBalance">Line of Credit Balance</label>
@@ -140,12 +207,12 @@
             <div class="form-group">
               <label for="locMinPayment">Minimum LOC Payment (Optional)</label>
               <input type="number" id="locMinPayment" min="0" step="0.01" placeholder="0.00" value="0">
-              <small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.875rem;">Minimum payment required on LOC</small>
+              <small style="display: block; margin-top: 0.25rem; color: var(--text-color, #64748b); opacity: 0.8; font-size: 0.875rem;">Minimum payment required on LOC</small>
             </div>
             <div class="form-group">
               <label for="extraPayments">Extra Monthly Payments (Optional)</label>
               <input type="number" id="extraPayments" min="0" step="0.01" placeholder="0.00" value="0">
-              <small style="display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.875rem;">Additional payments toward debt</small>
+              <small style="display: block; margin-top: 0.25rem; color: var(--text-color, #64748b); opacity: 0.8; font-size: 0.875rem;">Additional payments toward debt</small>
             </div>
           </div>
           

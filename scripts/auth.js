@@ -1,5 +1,5 @@
 // Import Firebase services from firebase-config.js
-import { auth, db } from './firebase-config.js';
+import { auth, db } from '/firebase-config.js';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
@@ -98,23 +98,19 @@ async function logout() {
     // Set a flag to prevent onAuthStateChanged from redirecting back
     sessionStorage.setItem('logout-in-progress', 'true');
     
-    // Determine correct login.html path BEFORE clearing storage
-    let loginPath = 'src/pages/auth/login.html';
+    // Determine redirect path - always go to landing page (index.html)
+    let redirectPath = '/index.html';
     const currentPath = window.location.pathname;
     
-    // If we're on index.html or root, login.html should be at src/pages/auth/login.html
+    // Use absolute path for consistency
     if (currentPath.includes('index.html') || currentPath === '/' || currentPath.endsWith('/')) {
-      loginPath = 'src/pages/auth/login.html';
-    } else if (currentPath.includes('/src/pages/')) {
-      loginPath = '../../src/pages/auth/login.html';
-    } else if (currentPath.includes('/pages/')) {
-      loginPath = '../auth/login.html';
-    } else if (currentPath === '/login.html' || currentPath.endsWith('/login.html')) {
-      // Already on login page, just clear and reload
-      loginPath = 'src/pages/auth/login.html';
+      redirectPath = '/index.html';
+    } else {
+      // If on any other page, redirect to index.html (landing page)
+      redirectPath = '/index.html';
     }
     
-    console.log('[Auth] Logout - redirect path:', loginPath, 'Current path:', currentPath);
+    console.log('[Auth] Logout - redirect path:', redirectPath, 'Current path:', currentPath);
     
     // Clear timeout first
     clearTimeout(sessionTimer);
@@ -143,20 +139,20 @@ async function logout() {
     sessionStorage.setItem('logout-in-progress', 'true'); // Re-set flag
     
     console.log('[Auth] Cleared local and session storage');
-    console.log('[Auth] Redirecting to login:', loginPath);
+    console.log('[Auth] Redirecting to landing page:', redirectPath);
     
     // Redirect immediately - use setTimeout to ensure it happens after signOut completes
     setTimeout(() => {
       try {
         // Use absolute path to be safe
-        const absolutePath = loginPath.startsWith('/') ? loginPath : '/' + loginPath;
+        const absolutePath = redirectPath.startsWith('/') ? redirectPath : '/' + redirectPath;
         const fullUrl = window.location.origin + absolutePath;
-        console.log('[Auth] Redirecting to:', fullUrl);
+        console.log('[Auth] Redirecting to landing page:', fullUrl);
         window.location.replace(fullUrl);
       } catch (redirectError) {
         console.error('[Auth] Redirect error, trying href:', redirectError);
         // Fallback to href
-        window.location.href = loginPath.startsWith('/') ? loginPath : '/' + loginPath;
+        window.location.href = redirectPath.startsWith('/') ? redirectPath : '/' + redirectPath;
       }
     }, 100);
     
@@ -174,15 +170,12 @@ async function logout() {
       } else {
         console.error('Error during logout: ' + error.message);
       }
-      // Still try to redirect - use absolute path
-      const loginPath = window.location.pathname.includes('/src/pages/') 
-        ? '../../src/pages/auth/login.html' 
-        : 'src/pages/auth/login.html';
-      window.location.replace(window.location.origin + '/' + loginPath);
+      // Still try to redirect to landing page - use absolute path
+      window.location.replace(window.location.origin + '/index.html');
     } catch (redirectError) {
       console.error('[Auth] Error during logout redirect:', redirectError);
-      // Last resort - hard redirect
-      window.location.href = window.location.origin + '/src/pages/auth/login.html';
+      // Last resort - hard redirect to landing page
+      window.location.href = window.location.origin + '/index.html';
     }
   }
 }
@@ -277,6 +270,78 @@ let lastAuthState = null;
 let authStateChangeCount = 0;
 let isProcessingAuthState = false; // Flag to prevent concurrent processing
 let pageLoadTime = Date.now(); // Track when page was loaded
+let isNavigatingBack = false; // Flag to track back/forward navigation
+
+// Detect if page was loaded via back/forward button
+function isBackForwardNavigation() {
+  // Check performance navigation API
+  if (window.performance && window.performance.navigation) {
+    return window.performance.navigation.type === 2; // TYPE_BACK_FORWARD = 2
+  }
+  // Check PerformanceNavigationTiming API (newer)
+  if (window.performance && window.performance.getEntriesByType) {
+    const navEntries = window.performance.getEntriesByType('navigation');
+    if (navEntries.length > 0) {
+      return navEntries[0].type === 'back_forward';
+    }
+  }
+  // Check if page was restored from bfcache
+  if (window.performance && window.performance.getEntriesByType) {
+    const entries = window.performance.getEntriesByType('navigation');
+    if (entries.length > 0 && entries[0].transferSize === 0 && entries[0].decodedBodySize > 0) {
+      return true; // Likely from cache/bfcache
+    }
+  }
+  return false;
+}
+
+// Track navigation history to detect back/forward navigation
+let navigationHistory = [];
+const MAX_HISTORY = 10;
+
+// NOTE: Popstate handler is now in /utils/backButtonHandler.js to avoid conflicts
+// This handler is removed to prevent duplicate event listeners
+// The global backButtonHandler.js handles all back button navigation
+// We only set the flag here for onAuthStateChanged to respect back navigation
+if (typeof window !== 'undefined') {
+  window.addEventListener('popstate', (event) => {
+    // Just set the flag - let backButtonHandler.js handle the redirect
+    isNavigatingBack = true;
+    sessionStorage.setItem('is-navigating-back', 'true');
+    console.log('[Auth] Popstate detected - flagging for backButtonHandler.js');
+    
+    // Reset flag after delay
+    setTimeout(() => {
+      isNavigatingBack = false;
+      sessionStorage.removeItem('is-navigating-back');
+    }, 3000);
+  });
+}
+
+// Track navigation to detect back button usage
+if (typeof window !== 'undefined') {
+  // Store current page on load
+  const currentPath = window.location.pathname;
+  const lastPath = sessionStorage.getItem('last-navigation-path');
+  const lastNavTime = parseInt(sessionStorage.getItem('last-navigation-time') || '0');
+  const now = Date.now();
+  
+  // If we loaded quickly and path is different, might be back navigation
+  if (lastPath && lastPath !== currentPath && (now - lastNavTime) < 1000) {
+    // Could be back navigation - don't redirect for a bit
+    sessionStorage.setItem('is-navigating-back', 'true');
+    isNavigatingBack = true;
+    console.log('[Auth] Possible back navigation detected - path changed quickly');
+    setTimeout(() => {
+      sessionStorage.removeItem('is-navigating-back');
+      isNavigatingBack = false;
+    }, 3000);
+  }
+  
+  // Update last navigation path
+  sessionStorage.setItem('last-navigation-path', currentPath);
+  sessionStorage.setItem('last-navigation-time', now.toString());
+}
 
 // Authentication state observer with debouncing
 auth.onAuthStateChanged(async user => {
@@ -328,6 +393,26 @@ auth.onAuthStateChanged(async user => {
       return; // Already processed
     }
     
+    // CRITICAL: Don't redirect if this is a back/forward navigation
+    // This prevents the back button from triggering unwanted redirects
+    const isNavigatingBackCheck = isNavigatingBack || 
+                                  isBackForwardNavigation() || 
+                                  sessionStorage.getItem('is-navigating-back') === 'true';
+    
+    if (isNavigatingBackCheck) {
+      console.log('[Auth] Back/forward navigation detected, skipping redirects to preserve browser history');
+      authStateChangeTimeout = null;
+      isProcessingAuthState = false;
+      // Still update the user state, just don't redirect
+      lastAuthState = currentUserId;
+      currentUser = user;
+      if (user) {
+        startSessionTimer();
+        updateUIForLoggedInUser(user);
+      }
+      return;
+    }
+    
     isProcessingAuthState = true;
     lastAuthState = currentUserId;
     currentUser = user;
@@ -353,6 +438,8 @@ auth.onAuthStateChanged(async user => {
     
     if (user) {
       authStateResolved = true;
+      // Store user email in sessionStorage for backButtonHandler.js
+      sessionStorage.setItem('user-email', user.email);
       console.log('[Auth] User signed in:', user.email, 'Verified:', user.emailVerified);
       
       // Check if email is verified
@@ -444,8 +531,35 @@ auth.onAuthStateChanged(async user => {
         }
         
         // CRITICAL: Never redirect if already on index.html - this prevents refresh loops
-        if (isIndexPage) {
-          console.log('[Auth] Already on index.html, skipping redirect to prevent loop');
+        if (isIndexPage && user) {
+          // Authenticated user on landing page - redirect to dashboard
+          // BUT: Don't redirect if this is a back/forward navigation
+          const isNavigatingBackCheck = isNavigatingBack || 
+                                        isBackForwardNavigation() || 
+                                        sessionStorage.getItem('is-navigating-back') === 'true';
+          
+          if (isNavigatingBackCheck) {
+            // If navigating back to index.html, redirect to dashboard and replace history
+            // This ensures back button goes to dashboard, not index.html
+            console.log('[Auth] Back navigation to index.html detected, redirecting to dashboard and replacing history');
+            history.replaceState(null, '', '/dashboard.html');
+            window.location.replace(window.location.origin + '/dashboard.html');
+            authStateChangeTimeout = null;
+            isProcessingAuthState = false;
+            return;
+          }
+          console.log('[Auth] Authenticated user on landing page, redirecting to dashboard');
+          // Replace history so index.html isn't in the back button history
+          history.replaceState(null, '', '/dashboard.html');
+          setTimeout(() => {
+            window.location.replace(window.location.origin + '/dashboard.html');
+          }, 300);
+          authStateChangeTimeout = null;
+          isProcessingAuthState = false;
+          return;
+        } else if (isIndexPage && !user) {
+          // Unauthenticated user on landing page - allow them to stay
+          console.log('[Auth] Unauthenticated user on landing page, allowing access');
           authStateChangeTimeout = null;
           isProcessingAuthState = false;
           return;
@@ -475,15 +589,15 @@ auth.onAuthStateChanged(async user => {
           }
         }
         
-        // Determine correct redirect path - use absolute path on Firebase hosting
-          let redirectPath = '/index.html';
+        // Determine correct redirect path - authenticated users go to dashboard
+          let redirectPath = '/dashboard.html';
           const currentPath = window.location.pathname;
           
           // Use absolute path to avoid issues with Firebase rewrites
           if (currentPath.includes('/src/pages/auth/')) {
-            redirectPath = window.location.origin + '/index.html';
+            redirectPath = window.location.origin + '/dashboard.html';
           } else {
-            redirectPath = window.location.origin + '/index.html';
+            redirectPath = window.location.origin + '/dashboard.html';
           }
           
           console.log('[Auth] Redirecting to:', redirectPath, 'Current path:', currentPath);
@@ -495,10 +609,10 @@ auth.onAuthStateChanged(async user => {
           // Use a small delay to prevent immediate redirect loops
           setTimeout(() => {
             try {
-              window.location.replace(redirectPath);
+              window.location.href = redirectPath; // Use href instead of replace to preserve browser history
             } catch (error) {
               console.error('[Auth] Redirect error:', error);
-              window.location.replace(window.location.origin + '/index.html');
+              window.location.href = window.location.origin + '/index.html';
             }
           }, 500); // Increased delay to 500ms
         } else {
@@ -532,14 +646,29 @@ auth.onAuthStateChanged(async user => {
       try {
         const userRef = doc(db, 'users', user.uid);
         const docSnap = await getDoc(userRef);
+        const updateData = { 
+          lastLogin: new Date().toISOString(),
+          email: user.email
+        };
+        
         if (!docSnap.exists()) {
+          // New user - set joined and lastLogin
           await setDoc(userRef, { 
             email: user.email, 
             joined: new Date().toISOString(),
             lastLogin: new Date().toISOString()
           });
+          console.log('[Auth] Created user document in Firestore with joined date');
         } else {
-          await updateDoc(userRef, { lastLogin: new Date().toISOString() });
+          // Existing user - update lastLogin and ensure joined exists
+          const existingData = docSnap.data();
+          if (!existingData.joined) {
+            // Backfill joined date for existing users
+            updateData.joined = new Date().toISOString();
+            console.log('[Auth] Backfilling joined date for existing user');
+          }
+          await updateDoc(userRef, updateData);
+          console.log('[Auth] Updated user document in Firestore with lastLogin');
         }
       } catch (error) {
         console.error('[Auth] Error updating user data:', error);
@@ -571,6 +700,9 @@ auth.onAuthStateChanged(async user => {
         return;
       }
       console.log('[Auth] User signed out or no user present');
+      
+      // Clear stored user email
+      sessionStorage.removeItem('user-email');
       
       // Update UI for logged out user
       document.querySelectorAll('.auth-required').forEach(element => {
@@ -649,7 +781,7 @@ auth.onAuthStateChanged(async user => {
             sessionStorage.setItem('reload-history', JSON.stringify(history));
             
             setTimeout(() => {
-              window.location.replace(loginPath);
+              window.location.href = loginPath; // Use href instead of replace to preserve browser history
             }, 500);
           }
         } else {
@@ -658,8 +790,33 @@ auth.onAuthStateChanged(async user => {
           sessionStorage.removeItem('last-redirect-attempt');
         }
       } else if (isIndexPage) {
-        // On index.html - this is fine, user can view public dashboard
-        console.log('[Auth] User on index.html (public page), allowing access');
+        // On index.html (landing page) - redirect authenticated users to dashboard
+        // BUT: Don't redirect if this is a back/forward navigation
+        if (user) {
+          const isNavigatingBackCheck = isNavigatingBack || 
+                                        isBackForwardNavigation() || 
+                                        sessionStorage.getItem('is-navigating-back') === 'true';
+          
+          if (isNavigatingBackCheck) {
+            // If navigating back to index.html, redirect to dashboard and replace history
+            // This ensures back button goes to dashboard, not index.html
+            console.log('[Auth] Back navigation to index.html detected, redirecting to dashboard and replacing history');
+            history.replaceState(null, '', '/dashboard.html');
+            window.location.replace(window.location.origin + '/dashboard.html');
+            authStateChangeTimeout = null;
+            isProcessingAuthState = false;
+            return;
+          }
+          console.log('[Auth] Authenticated user on landing page, redirecting to dashboard');
+          // Replace history so index.html isn't in the back button history
+          history.replaceState(null, '', '/dashboard.html');
+          setTimeout(() => {
+            window.location.replace(window.location.origin + '/dashboard.html');
+          }, 300);
+        } else {
+          // Unauthenticated users can stay on landing page
+          console.log('[Auth] User on index.html (landing page), allowing access');
+        }
         // Clear redirect attempt flag
         sessionStorage.removeItem('last-redirect-attempt');
       } else if (hasRecentRedirect) {

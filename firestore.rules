@@ -19,37 +19,37 @@ service cloud.firestore {
     
     // Debts collection - users can only access their own debts
     match /debts/{debtId} {
-      allow read: if isAuthenticated() && (resource == null || request.auth.uid == resource.data.userId);
-      allow write: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
     // Budgets collection - users can only access their own budgets
     match /budgets/{budgetId} {
-      allow read: if isAuthenticated() && (resource == null || request.auth.uid == resource.data.userId);
-      allow write: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
     // Savings Goals collection - users can only access their own goals
     match /savingsGoals/{goalId} {
-      allow read: if isAuthenticated() && (resource == null || request.auth.uid == resource.data.userId);
-      allow write: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
     // Net Worth collection - users can only access their own net worth
     match /netWorth/{netWorthId} {
-      allow read: if isAuthenticated() && (resource == null || request.auth.uid == resource.data.userId);
-      allow write: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
     // Activities collection - users can only access their own activities
     match /activities/{activityId} {
-      allow read: if isAuthenticated() && (resource == null || request.auth.uid == resource.data.userId);
-      allow write: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
     // Deny all other collections
