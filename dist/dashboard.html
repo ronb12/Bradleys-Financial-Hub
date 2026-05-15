@@ -3689,16 +3689,23 @@
           return;
         }
         
-        // Check if user is authenticated - only load data if authenticated
-        // DataService will throw errors if user is not authenticated, so catch those
-        // Check multiple sources for authentication
-        const hasAuthUser = window.auth && window.auth.currentUser;
-        const hasStoredEmail = sessionStorage.getItem('user-email');
-        const isAuthenticated = hasAuthUser || hasStoredEmail;
+        const storedEmail = sessionStorage.getItem('user-email');
+        let hasAuthUser = window.auth && window.auth.currentUser;
+        let authAttempts = 0;
+
+        // If the session says the user is signed in, wait briefly for Firebase
+        // Auth to hydrate so dashboard totals do not fall back to demo data.
+        while (!hasAuthUser && storedEmail && authAttempts < 20) {
+          await new Promise(resolve => setTimeout(resolve, 250));
+          hasAuthUser = window.auth && window.auth.currentUser;
+          authAttempts++;
+        }
+
+        const isAuthenticated = Boolean(hasAuthUser);
         
         // Only load data if user is authenticated
         if (!isAuthenticated) {
-          console.log('User not authenticated, showing default values');
+          console.log('User not authenticated yet, showing default values');
           updateStatValue('creditUtilizationValue', 'N/A');
           updateStatValue('netWorthValue', '$0.00');
           updateStatValue('debtSummaryValue', '$0.00');
