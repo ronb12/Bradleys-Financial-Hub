@@ -30,6 +30,69 @@ function getUserId() {
   return window.auth.currentUser.uid;
 }
 
+const demoDate = new Date('2026-05-14T21:15:00-04:00').toISOString();
+const demoDebts = [
+  {
+    id: 'demo-credit-card',
+    name: 'Credit Card',
+    balance: 3500,
+    interestRate: 22.9,
+    minimumPayment: 120,
+    dueDate: '2026-06-01',
+    createdAt: demoDate
+  },
+  {
+    id: 'demo-student-loan',
+    name: 'Student Loan',
+    balance: 25000,
+    interestRate: 5.8,
+    minimumPayment: 275,
+    dueDate: '2026-06-15',
+    createdAt: demoDate
+  },
+  {
+    id: 'demo-auto-loan',
+    name: 'Auto Loan',
+    balance: 22500,
+    interestRate: 7.2,
+    minimumPayment: 410,
+    dueDate: '2026-06-20',
+    createdAt: demoDate
+  }
+];
+
+const demoBudgets = [
+  { id: 'demo-food', category: 'Food & Dining', budgetedAmount: 600, spentAmount: 420.5, month: '2026-04', createdAt: demoDate },
+  { id: 'demo-utilities', category: 'Utilities', budgetedAmount: 300, spentAmount: 275, month: '2026-04', createdAt: demoDate },
+  { id: 'demo-transportation', category: 'Transportation', budgetedAmount: 450, spentAmount: 330.75, month: '2026-04', createdAt: demoDate },
+  { id: 'demo-entertainment', category: 'Entertainment', budgetedAmount: 400, spentAmount: 370, month: '2026-04', createdAt: demoDate }
+];
+
+const demoSavingsGoals = [
+  { id: 'demo-emergency', name: 'Emergency Fund', targetAmount: 10000, currentAmount: 6500, targetDate: '2026-12-31', priority: 2, createdAt: demoDate },
+  { id: 'demo-vacation', name: 'Vacation Fund', targetAmount: 3000, currentAmount: 1200, targetDate: '2026-08-15', priority: 1, createdAt: demoDate },
+  { id: 'demo-home', name: 'Home Down Payment', targetAmount: 50000, currentAmount: 2500, targetDate: '2028-05-01', priority: 3, createdAt: demoDate }
+];
+
+const demoNetWorth = {
+  id: 'demo-net-worth',
+  assets: 48000,
+  liabilities: 40500,
+  date: demoDate,
+  createdAt: demoDate
+};
+
+const demoActivities = [
+  { id: 'demo-activity-budget', type: 'budget', description: 'Created budget: Food & Dining', amount: 600, date: demoDate },
+  { id: 'demo-activity-goal', type: 'goal', description: 'Set savings goal: Emergency Fund', amount: 10000, date: demoDate },
+  { id: 'demo-activity-debt', type: 'debt', description: 'Added debt: Credit Card', amount: -3500, date: demoDate },
+  { id: 'demo-activity-networth', type: 'networth', description: 'Updated net worth', amount: 7500, date: demoDate }
+];
+
+function cloneDemoData(data) {
+  return JSON.parse(JSON.stringify(data));
+}
+
 // Import Firestore functions dynamically
 async function getFirestoreFunctions() {
   const { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, Timestamp } = 
@@ -42,7 +105,7 @@ window.DataService = window.DataService || {};
 
 window.DataService.getDebts = async function() {
   const userId = getUserId();
-  if (!userId) throw new Error('User not authenticated');
+  if (!userId) return cloneDemoData(demoDebts);
   
   const db = await getDb();
   const { collection, query, where, orderBy, getDocs } = await getFirestoreFunctions();
@@ -146,7 +209,7 @@ window.DataService.deleteDebt = async function(debtId) {
 // ========== BUDGET OPERATIONS ==========
 window.DataService.getBudgets = async function() {
   const userId = getUserId();
-  if (!userId) throw new Error('User not authenticated');
+  if (!userId) return cloneDemoData(demoBudgets);
   
   const db = await getDb();
   const { collection, query, where, orderBy, getDocs } = await getFirestoreFunctions();
@@ -212,7 +275,7 @@ window.DataService.deleteBudget = async function(budgetId) {
 // ========== SAVINGS GOAL OPERATIONS ==========
 window.DataService.getSavingsGoals = async function() {
   const userId = getUserId();
-  if (!userId) throw new Error('User not authenticated');
+  if (!userId) return cloneDemoData(demoSavingsGoals);
   
   const db = await getDb();
   const { collection, query, where, orderBy, getDocs } = await getFirestoreFunctions();
@@ -279,7 +342,7 @@ window.DataService.deleteSavingsGoal = async function(goalId) {
 // ========== NET WORTH OPERATIONS ==========
 window.DataService.getNetWorth = async function() {
   const userId = getUserId();
-  if (!userId) throw new Error('User not authenticated');
+  if (!userId) return cloneDemoData(demoNetWorth);
   
   const db = await getDb();
   const { collection, query, where, orderBy, limit, getDocs } = await getFirestoreFunctions();
@@ -315,7 +378,7 @@ window.DataService.saveNetWorth = async function(netWorthData) {
 // ========== ACTIVITY OPERATIONS ==========
 window.DataService.getActivities = async function(limitCount = 50) {
   const userId = getUserId();
-  if (!userId) throw new Error('User not authenticated');
+  if (!userId) return cloneDemoData(demoActivities).slice(0, limitCount);
   
   const db = await getDb();
   const { collection, query, where, orderBy, limit, getDocs } = await getFirestoreFunctions();

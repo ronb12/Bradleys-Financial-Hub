@@ -30,6 +30,7 @@ const CONFIG = {
     allowUnverifiedAccounts: [
       'testuser@bfh.com',
       'testuser@BFH.com', // Also allow uppercase variant
+      'ronellbradley+finance-qa-20260514-2115@gmail.com',
     ]
   },
   
