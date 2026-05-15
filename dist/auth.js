@@ -258,9 +258,10 @@ function updateUIForLoggedInUser(user) {
   const userMenu = document.querySelector('.user-menu');
   if (userMenu) {
     userMenu.innerHTML = `
-      <span class="user-email">${user.email}</span>
-      <button onclick="logout()" class="logout-btn">Logout</button>
+      <span class="user-email" title="${user.email}">${user.email}</span>
+      <button type="button" onclick="logout()" class="logout-btn">Logout</button>
     `;
+    userMenu.setAttribute('aria-label', `Signed in as ${user.email}`);
   }
 }
 
